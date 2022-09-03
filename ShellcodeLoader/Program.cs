@@ -382,6 +382,12 @@ namespace ShellcodeLoader
                 }
             }
 
+            if (!File.Exists(filename))
+            {
+                Console.Error.WriteLine("Specified filename does not exist: " + filename);
+                return -1;
+            }
+
             // Load shellcode from file
             string key = null;
             string strpayload = null;
