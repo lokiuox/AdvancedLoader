@@ -327,8 +327,8 @@ namespace ShellcodeLoader
         public static void usage()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [-u] [-p password] [-s shellcode_file]");
-            sb.AppendLine("\t-s shellcode_file\tfile containing the shellcode");
+            sb.AppendLine("Usage: ShellcodeLoader.exe [-u] [-p password] [shellcode_file]");
+            sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
             sb.AppendLine("If <shellcode> is not specified, the program will search for \"shellcode.bin\" the current working directory.");
             sb.AppendLine("\t-p password\tif a password is required for the key, it will be read from this parameter instead of asking interactively");
             sb.AppendLine("\t-u\tdo API unhooking before loading the shellcode");
