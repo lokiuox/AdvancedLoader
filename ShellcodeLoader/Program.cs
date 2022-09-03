@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Data = DInvoke.Data;
 using DynamicInvoke = DInvoke.DynamicInvoke;
-using ManualMap = DInvoke.ManualMap;
 
 namespace ShellcodeLoader
 {
@@ -161,8 +160,6 @@ namespace ShellcodeLoader
         [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
         public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
 
-        [DllImport("kernel32.dll", SetLastError = true, CallingConvention = CallingConvention.Winapi)]
-        public static extern bool IsWow64Process(IntPtr hProcess, out bool Wow64Process);
     }
     class Program
     {
