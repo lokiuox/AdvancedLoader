@@ -171,15 +171,13 @@ namespace ShellcodeLoader
             IDictionary<string, IntPtr> funcAddresses = new Dictionary<string, IntPtr>();
             foreach (string function in functions)
             {
-                IntPtr funcPtr = DynamicInvoke.Generic.GetExportAddress(hModule, function);
-
-                if (funcPtr != IntPtr.Zero)
+                try
                 {
+                    IntPtr funcPtr = DynamicInvoke.Generic.GetExportAddress(hModule, function);
                     funcAddresses.Add(function, funcPtr);
-                }
-                else
+                } catch (MissingMethodException)
                 {
-                    Console.WriteLine("[-] Couldn't locate the address for {0}! (Error: {1})", function, Marshal.GetLastWin32Error());
+                    Console.WriteLine("[-] Couldn't locate the address for {0}!", function);
                 }
             }
 
