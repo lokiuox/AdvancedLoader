@@ -1,0 +1,1 @@
+C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /r:System.EnterpriseServices.dll /target:exe /out:ShellcodeLoader.exe /keyfile:key.snk /unsafe Program.cs DInvoke.cs
