@@ -28,12 +28,33 @@ def getshellcode(inputfile):
             return f.read()
     else:
         if sys.platform == 'win32':
-            shellcode = donut.create(filename)
+            try:
+                shellcode = donut.create(
+                    filename,
+                    params="PARAMS_PLACEHOLDER",
+                    entropy=2,
+                    compress=1
+                )
+            except TypeError:
+                print("WARNING: It was not possible to set entropy due to an outdated donut-shellcode pip, runtime parameters have been disabled.")
+                print("Compile the python module from the github repo to fix this issue.")
+                shellcode = donut.create(
+                    filename)
         else:
-            shellcode = donut.create(
-                file=filename,
-                output='/dev/null'
-            )
+            try:
+                shellcode = donut.create(
+                    file=filename,
+                    output='/dev/null',
+                    params="PARAMS_PLACEHOLDER",
+                    entropy=2,
+                    compress=1
+                )
+            except TypeError:
+                print("WARNING: It was not possible to set entropy due to an outdated donut-shellcode pip, runtime parameters have been disabled.")
+                print("Compile the python module from the github repo to fix this issue.")
+                shellcode = donut.create(
+                    file=filename,
+                    output='/dev/null')
         return shellcode
 
 def write_output(shellcode, keycode, output):

