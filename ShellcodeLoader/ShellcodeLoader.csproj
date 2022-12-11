@@ -103,6 +103,7 @@
     <Compile Include="DInvoke.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Unhooker.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
