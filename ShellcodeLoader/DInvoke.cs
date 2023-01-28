@@ -8,16 +8,16 @@ using System.Runtime.InteropServices;
 
 namespace XYZ.DI
 {
-    public class ManualMapInt
+    internal class ManualMapInt
     {
-        public static IntPtr AllocateBytesToMemory(byte[] FileByteArray)
+        internal static IntPtr AllocateBytesToMemory(byte[] FileByteArray)
         {
             IntPtr pFile = Marshal.AllocHGlobal(FileByteArray.Length);
             Marshal.Copy(FileByteArray, 0, pFile, FileByteArray.Length);
             return pFile;
         }
 
-        public static IntPtr AllocateFileToMemory(string FilePath)
+        internal static IntPtr AllocateFileToMemory(string FilePath)
         {
             if (!File.Exists(FilePath))
             {
@@ -32,7 +32,7 @@ namespace XYZ.DI
     /// Generic is a class for dynamically invoking arbitrary API calls from memory or disk. DynamicInvoke avoids suspicious
     /// P/Invoke signatures, imports, and IAT entries by loading modules and invoking their functions at runtime.
     /// </summary>
-    public class Generic
+    internal class Generic
     {
         /// <summary>
         /// Dynamically invoke an arbitrary function from a DLL, providing its name, function prototype, and arguments.
@@ -43,7 +43,7 @@ namespace XYZ.DI
         /// <param name="FunctionDelegateType">Prototype for the function, represented as a Delegate object.</param>
         /// <param name="Parameters">Parameters to pass to the function. Can be modified if function uses call by reference.</param>
         /// <returns>Object returned by the function. Must be unmarshalled by the caller.</returns>
-        public static object DynamicAPIInvoke(string DLLName, string FunctionName, Type FunctionDelegateType, ref object[] Parameters)
+        internal static object DynamicAPIInvoke(string DLLName, string FunctionName, Type FunctionDelegateType, ref object[] Parameters)
         {
             IntPtr pFunction = GetLibraryAddress(DLLName, FunctionName);
             return DynamicFunctionInvoke(pFunction, FunctionDelegateType, ref Parameters);
@@ -57,7 +57,7 @@ namespace XYZ.DI
         /// <param name="FunctionDelegateType">Prototype for the function, represented as a Delegate object.</param>
         /// <param name="Parameters">Arbitrary set of parameters to pass to the function. Can be modified if function uses call by reference.</param>
         /// <returns>Object returned by the function. Must be unmarshalled by the caller.</returns>
-        public static object DynamicFunctionInvoke(IntPtr FunctionPointer, Type FunctionDelegateType, ref object[] Parameters)
+        internal static object DynamicFunctionInvoke(IntPtr FunctionPointer, Type FunctionDelegateType, ref object[] Parameters)
         {
             Delegate funcDelegate = Marshal.GetDelegateForFunctionPointer(FunctionPointer, FunctionDelegateType);
             return funcDelegate.DynamicInvoke(Parameters);
@@ -69,7 +69,7 @@ namespace XYZ.DI
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="DLLPath">The path to the DLL on disk. Uses the LoadLibrary convention.</param>
         /// <returns>IntPtr base address of the loaded module or IntPtr.Zero if the module was not loaded successfully.</returns>
-        public static IntPtr LoadModuleFromDisk(string DLLPath)
+        internal static IntPtr LoadModuleFromDisk(string DLLPath)
         {
             Data.Native.UNICODE_STRING uModuleName = new Data.Native.UNICODE_STRING();
             Native.RtlInitUnicodeString(ref uModuleName, DLLPath);
@@ -92,7 +92,7 @@ namespace XYZ.DI
         /// <param name="FunctionName">Name of the exported procedure.</param>
         /// <param name="CanLoadFromDisk">Optional, indicates if the function can try to load the DLL from disk if it is not found in the loaded module list.</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetLibraryAddress(string DLLName, string FunctionName, bool CanLoadFromDisk = false)
+        internal static IntPtr GetLibraryAddress(string DLLName, string FunctionName, bool CanLoadFromDisk = false)
         {
             IntPtr hModule = GetLoadedModuleAddress(DLLName);
             if (hModule == IntPtr.Zero && CanLoadFromDisk)
@@ -119,7 +119,7 @@ namespace XYZ.DI
         /// <param name="Ordinal">Ordinal of the exported procedure.</param>
         /// <param name="CanLoadFromDisk">Optional, indicates if the function can try to load the DLL from disk if it is not found in the loaded module list.</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetLibraryAddress(string DLLName, short Ordinal, bool CanLoadFromDisk = false)
+        internal static IntPtr GetLibraryAddress(string DLLName, short Ordinal, bool CanLoadFromDisk = false)
         {
             IntPtr hModule = GetLoadedModuleAddress(DLLName);
             if (hModule == IntPtr.Zero && CanLoadFromDisk)
@@ -147,7 +147,7 @@ namespace XYZ.DI
         /// <param name="Key">64-bit integer to initialize the keyed hash object (e.g. 0xabc or 0x1122334455667788).</param>
         /// <param name="CanLoadFromDisk">Optional, indicates if the function can try to load the DLL from disk if it is not found in the loaded module list.</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetLibraryAddress(string DLLName, string FunctionHash, long Key, bool CanLoadFromDisk = false)
+        internal static IntPtr GetLibraryAddress(string DLLName, string FunctionHash, long Key, bool CanLoadFromDisk = false)
         {
             IntPtr hModule = GetLoadedModuleAddress(DLLName);
             if (hModule == IntPtr.Zero && CanLoadFromDisk)
@@ -174,7 +174,7 @@ namespace XYZ.DI
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="DLLName">The name of the DLL (e.g. "ntdll.dll").</param>
         /// <returns>IntPtr base address of the loaded module or IntPtr.Zero if the module is not found.</returns>
-        public static IntPtr GetLoadedModuleAddress(string DLLName)
+        internal static IntPtr GetLoadedModuleAddress(string DLLName)
         {
             ProcessModuleCollection ProcModules = Process.GetCurrentProcess().Modules;
             foreach (ProcessModule Mod in ProcModules)
@@ -195,7 +195,7 @@ namespace XYZ.DI
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="DLLName">The name of the DLL (e.g. "ntdll.dll").</param>
         /// <returns>IntPtr base address of the loaded module or IntPtr.Zero if the module is not found.</returns>
-        public static IntPtr GetPebLdrModuleEntry(string DLLName)
+        internal static IntPtr GetPebLdrModuleEntry(string DLLName)
         {
             // Get _PEB pointer
             Data.Native.PROCESS_BASIC_INFORMATION pbi = Native.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
@@ -246,7 +246,7 @@ namespace XYZ.DI
         /// <param name="APIName">API name to hash.</param>
         /// <param name="Key">64-bit integer to initialize the keyed hash object (e.g. 0xabc or 0x1122334455667788).</param>
         /// <returns>string, the computed MD5 hash value.</returns>
-        public static string GetAPIHash(string APIName, long Key)
+        internal static string GetAPIHash(string APIName, long Key)
         {
             byte[] data = Encoding.UTF8.GetBytes(APIName.ToLower());
             byte[] kbytes = BitConverter.GetBytes(Key);
@@ -265,7 +265,7 @@ namespace XYZ.DI
         /// <param name="ModuleBase">A pointer to the base address where the module is loaded in the current process.</param>
         /// <param name="ExportName">The name of the export to search for (e.g. "NtAlertResumeThread").</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetExportAddress(IntPtr ModuleBase, string ExportName)
+        internal static IntPtr GetExportAddress(IntPtr ModuleBase, string ExportName)
         {
             IntPtr FunctionPtr = IntPtr.Zero;
             try
@@ -328,7 +328,7 @@ namespace XYZ.DI
         /// <param name="ModuleBase">A pointer to the base address where the module is loaded in the current process.</param>
         /// <param name="Ordinal">The ordinal number to search for (e.g. 0x136 -> ntdll!NtCreateThreadEx).</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetExportAddress(IntPtr ModuleBase, short Ordinal)
+        internal static IntPtr GetExportAddress(IntPtr ModuleBase, short Ordinal)
         {
             IntPtr FunctionPtr = IntPtr.Zero;
             try
@@ -391,7 +391,7 @@ namespace XYZ.DI
         /// <param name="FunctionHash">Hash of the exported procedure.</param>
         /// <param name="Key">64-bit integer to initialize the keyed hash object (e.g. 0xabc or 0x1122334455667788).</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetExportAddress(IntPtr ModuleBase, string FunctionHash, long Key)
+        internal static IntPtr GetExportAddress(IntPtr ModuleBase, string FunctionHash, long Key)
         {
             IntPtr FunctionPtr = IntPtr.Zero;
             try
@@ -454,7 +454,7 @@ namespace XYZ.DI
         /// <param name="ModuleBase">A pointer to the base address where the module is loaded in the current process.</param>
         /// <param name="ExportName">The name of the export to search for (e.g. "NtAlertResumeThread").</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetNativeExportAddress(IntPtr ModuleBase, string ExportName)
+        internal static IntPtr GetNativeExportAddress(IntPtr ModuleBase, string ExportName)
         {
             Data.Native.ANSI_STRING aFunc = new Data.Native.ANSI_STRING
             {
@@ -481,7 +481,7 @@ namespace XYZ.DI
         /// <param name="ModuleBase">A pointer to the base address where the module is loaded in the current process.</param>
         /// <param name="Ordinal">The ordinal number to search for (e.g. 0x136 -> ntdll!NtCreateThreadEx).</param>
         /// <returns>IntPtr for the desired function.</returns>
-        public static IntPtr GetNativeExportAddress(IntPtr ModuleBase, short Ordinal)
+        internal static IntPtr GetNativeExportAddress(IntPtr ModuleBase, short Ordinal)
         {
             IntPtr pFuncAddr = IntPtr.Zero;
             IntPtr pOrd = (IntPtr)Ordinal;
@@ -497,7 +497,7 @@ namespace XYZ.DI
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="pModule">Pointer to the module base.</param>
         /// <returns>PE.PE_META_DATA</returns>
-        public static Data.PE.PE_META_DATA GetPeMetaData(IntPtr pModule)
+        internal static Data.PE.PE_META_DATA GetPeMetaData(IntPtr pModule)
         {
             Data.PE.PE_META_DATA PeMetaData = new Data.PE.PE_META_DATA();
             try
@@ -548,7 +548,7 @@ namespace XYZ.DI
         /// </summary>
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <returns>Dictionary, a combination of Key:APISetDLL and Val:HostDLL.</returns>
-        public static Dictionary<string, string> GetApiSetMapping()
+        internal static Dictionary<string, string> GetApiSetMapping()
         {
             Data.Native.PROCESS_BASIC_INFORMATION pbi = Native.NtQueryInformationProcessBasicInformation((IntPtr)(-1));
             UInt32 ApiSetMapOffset = IntPtr.Size == 4 ? (UInt32)0x38 : 0x68;
@@ -587,7 +587,7 @@ namespace XYZ.DI
         /// <param name="PEINFO">Module meta data struct (PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void CallMappedPEModule(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        internal static void CallMappedPEModule(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
             // Call module by EntryPoint (eg Mimikatz.exe)
             IntPtr hRemoteThread = IntPtr.Zero;
@@ -610,7 +610,7 @@ namespace XYZ.DI
         /// <param name="PEINFO">Module meta data struct (PE.PE_META_DATA).</param>
         /// <param name="ModuleMemoryBase">Base address of the module in memory.</param>
         /// <returns>void</returns>
-        public static void CallMappedDLLModule(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
+        internal static void CallMappedDLLModule(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase)
         {
             IntPtr lpEntryPoint = PEINFO.Is32Bit ? (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader32.AddressOfEntryPoint) :
                                                    (IntPtr)((UInt64)ModuleMemoryBase + PEINFO.OptHeader64.AddressOfEntryPoint);
@@ -634,7 +634,7 @@ namespace XYZ.DI
         /// <param name="Parameters">Arbitrary set of parameters to pass to the function. Can be modified if function uses call by reference.</param>
         /// <param name="CallEntry">Specify whether to invoke the module's entry point.</param>
         /// <returns>void</returns>
-        public static object CallMappedDLLModuleExport(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase, string ExportName, Type FunctionDelegateType, object[] Parameters, bool CallEntry = true)
+        internal static object CallMappedDLLModuleExport(Data.PE.PE_META_DATA PEINFO, IntPtr ModuleMemoryBase, string ExportName, Type FunctionDelegateType, object[] Parameters, bool CallEntry = true)
         {
             // Call entry point if user has specified
             if (CallEntry)
@@ -655,7 +655,7 @@ namespace XYZ.DI
         /// <author>Ruben Boonen (@FuzzySec)</author>
         /// <param name="FunctionName">The name of the function to search for (e.g. "NtAlertResumeThread").</param>
         /// <returns>IntPtr, Syscall stub</returns>
-        public static IntPtr GetSyscallStub(string FunctionName)
+        internal static IntPtr GetSyscallStub(string FunctionName)
         {
             // Verify process & architecture
             bool isWOW64 = Native.NtQueryInformationProcessWow64Information((IntPtr)(-1));
@@ -746,9 +746,9 @@ namespace XYZ.DI
         }
     }
 
-    public class Native
+    internal class Native
     {
-        public static Data.Native.NTSTATUS NtCreateThreadEx(
+        internal static Data.Native.NTSTATUS NtCreateThreadEx(
             ref IntPtr threadHandle,
             Data.Win32.WinNT.ACCESS_MASK desiredAccess,
             IntPtr objectAttributes,
@@ -777,7 +777,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static Data.Native.NTSTATUS RtlCreateUserThread(
+        internal static Data.Native.NTSTATUS RtlCreateUserThread(
                 IntPtr Process,
                 IntPtr ThreadSecurityDescriptor,
                 bool CreateSuspended,
@@ -806,7 +806,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static Data.Native.NTSTATUS NtCreateSection(
+        internal static Data.Native.NTSTATUS NtCreateSection(
             ref IntPtr SectionHandle,
             uint DesiredAccess,
             IntPtr ObjectAttributes,
@@ -825,7 +825,7 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtCreateSection", typeof(DELEGATES.NtCreateSection), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Unable to create section, " + retValue);
+                throw new InvalidOperationException("Unable to create section, " + (uint)retValue);
             }
 
             // Update the modified variables
@@ -835,7 +835,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static Data.Native.NTSTATUS NtUnmapViewOfSection(IntPtr hProc, IntPtr baseAddr)
+        internal static Data.Native.NTSTATUS NtUnmapViewOfSection(IntPtr hProc, IntPtr baseAddr)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -849,7 +849,7 @@ namespace XYZ.DI
             return result;
         }
 
-        public static Data.Native.NTSTATUS NtMapViewOfSection(
+        internal static Data.Native.NTSTATUS NtMapViewOfSection(
             IntPtr SectionHandle,
             IntPtr ProcessHandle,
             ref IntPtr BaseAddress,
@@ -872,7 +872,7 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtMapViewOfSection", typeof(DELEGATES.NtMapViewOfSection), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success && retValue != Data.Native.NTSTATUS.ImageNotAtBase)
             {
-                throw new InvalidOperationException("Unable to map view of section, " + retValue);
+                throw new InvalidOperationException("Unable to map view of section, " + (uint)retValue);
             }
 
             // Update the modified variables.
@@ -882,7 +882,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static void RtlInitUnicodeString(ref Data.Native.UNICODE_STRING DestinationString, [MarshalAs(UnmanagedType.LPWStr)] string SourceString)
+        internal static void RtlInitUnicodeString(ref Data.Native.UNICODE_STRING DestinationString, [MarshalAs(UnmanagedType.LPWStr)] string SourceString)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -896,7 +896,7 @@ namespace XYZ.DI
             DestinationString = (Data.Native.UNICODE_STRING)funcargs[0];
         }
 
-        public static Data.Native.NTSTATUS LdrLoadDll(IntPtr PathToFile, UInt32 dwFlags, ref Data.Native.UNICODE_STRING ModuleFileName, ref IntPtr ModuleHandle)
+        internal static Data.Native.NTSTATUS LdrLoadDll(IntPtr PathToFile, UInt32 dwFlags, ref Data.Native.UNICODE_STRING ModuleFileName, ref IntPtr ModuleHandle)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -912,7 +912,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static void RtlZeroMemory(IntPtr Destination, int Length)
+        internal static void RtlZeroMemory(IntPtr Destination, int Length)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -923,7 +923,7 @@ namespace XYZ.DI
             Generic.DynamicAPIInvoke(@"ntdll.dll", @"RtlZeroMemory", typeof(DELEGATES.RtlZeroMemory), ref funcargs);
         }
 
-        public static Data.Native.NTSTATUS NtQueryInformationProcess(IntPtr hProcess, Data.Native.PROCESSINFOCLASS processInfoClass, out IntPtr pProcInfo)
+        internal static Data.Native.NTSTATUS NtQueryInformationProcess(IntPtr hProcess, Data.Native.PROCESSINFOCLASS processInfoClass, out IntPtr pProcInfo)
         {
             int processInformationLength;
             UInt32 RetLen = 0;
@@ -963,7 +963,7 @@ namespace XYZ.DI
             return retValue;
         }
 
-        public static bool NtQueryInformationProcessWow64Information(IntPtr hProcess)
+        internal static bool NtQueryInformationProcessWow64Information(IntPtr hProcess)
         {
             IntPtr pProcInfo;
             Data.Native.NTSTATUS retValue = NtQueryInformationProcess(hProcess, Data.Native.PROCESSINFOCLASS.ProcessWow64Information, out pProcInfo);
@@ -979,7 +979,7 @@ namespace XYZ.DI
             return true;
         }
 
-        public static Data.Native.PROCESS_BASIC_INFORMATION NtQueryInformationProcessBasicInformation(IntPtr hProcess)
+        internal static Data.Native.PROCESS_BASIC_INFORMATION NtQueryInformationProcessBasicInformation(IntPtr hProcess)
         {
             IntPtr pProcInfo;
             Data.Native.NTSTATUS retValue = NtQueryInformationProcess(hProcess, Data.Native.PROCESSINFOCLASS.ProcessBasicInformation, out pProcInfo);
@@ -991,7 +991,7 @@ namespace XYZ.DI
             return (Data.Native.PROCESS_BASIC_INFORMATION)Marshal.PtrToStructure(pProcInfo, typeof(Data.Native.PROCESS_BASIC_INFORMATION));
         }
 
-        public static IntPtr NtOpenProcess(UInt32 ProcessId, Data.Win32.Kernel32.ProcessAccessFlags DesiredAccess)
+        internal static IntPtr NtOpenProcess(UInt32 ProcessId, Data.Win32.Kernel32.ProcessAccessFlags DesiredAccess)
         {
             // Create OBJECT_ATTRIBUTES & CLIENT_ID ref's
             IntPtr ProcessHandle = IntPtr.Zero;
@@ -1021,7 +1021,7 @@ namespace XYZ.DI
             return ProcessHandle;
         }
 
-        public static void NtQueueApcThread(IntPtr ThreadHandle, IntPtr ApcRoutine, IntPtr ApcArgument1, IntPtr ApcArgument2, IntPtr ApcArgument3)
+        internal static void NtQueueApcThread(IntPtr ThreadHandle, IntPtr ApcRoutine, IntPtr ApcArgument1, IntPtr ApcArgument2, IntPtr ApcArgument3)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1032,11 +1032,11 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtQueueApcThread", typeof(DELEGATES.NtQueueApcThread), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Unable to queue APC, " + retValue);
+                throw new InvalidOperationException("Unable to queue APC, " + (uint)retValue);
             }
         }
 
-        public static IntPtr NtOpenThread(int TID, Data.Win32.Kernel32.ThreadAccess DesiredAccess)
+        internal static IntPtr NtOpenThread(int TID, Data.Win32.Kernel32.ThreadAccess DesiredAccess)
         {
             // Create OBJECT_ATTRIBUTES & CLIENT_ID ref's
             IntPtr ThreadHandle = IntPtr.Zero;
@@ -1066,7 +1066,7 @@ namespace XYZ.DI
             return ThreadHandle;
         }
 
-        public static IntPtr NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, IntPtr ZeroBits, ref IntPtr RegionSize, UInt32 AllocationType, UInt32 Protect)
+        internal static IntPtr NtAllocateVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, IntPtr ZeroBits, ref IntPtr RegionSize, UInt32 AllocationType, UInt32 Protect)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1130,7 +1130,7 @@ namespace XYZ.DI
             return BaseAddress;
         }
 
-        public static void NtFreeVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 FreeType)
+        internal static void NtFreeVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 FreeType)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1156,7 +1156,7 @@ namespace XYZ.DI
             }
         }
 
-        public static string GetFilenameFromMemoryPointer(IntPtr hProc, IntPtr pMem)
+        internal static string GetFilenameFromMemoryPointer(IntPtr hProc, IntPtr pMem)
         {
             // Alloc buffer for result struct
             IntPtr pBase = IntPtr.Zero;
@@ -1208,7 +1208,7 @@ namespace XYZ.DI
             return FilePath;
         }
 
-        public static UInt32 NtProtectVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 NewProtect)
+        internal static UInt32 NtProtectVirtualMemory(IntPtr ProcessHandle, ref IntPtr BaseAddress, ref IntPtr RegionSize, UInt32 NewProtect)
         {
             // Craft an array for the arguments
             UInt32 OldProtect = 0;
@@ -1220,14 +1220,14 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtProtectVirtualMemory", typeof(DELEGATES.NtProtectVirtualMemory), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed to change memory protection, " + retValue);
+                throw new InvalidOperationException("Failed to change memory protection, " + (uint)retValue);
             }
 
             OldProtect = (UInt32)funcargs[4];
             return OldProtect;
         }
 
-        public static UInt32 NtWriteVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 BufferLength)
+        internal static UInt32 NtWriteVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, UInt32 BufferLength)
         {
             // Craft an array for the arguments
             UInt32 BytesWritten = 0;
@@ -1239,14 +1239,14 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtWriteVirtualMemory", typeof(DELEGATES.NtWriteVirtualMemory), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed to write memory, " + retValue);
+                throw new InvalidOperationException("Failed to write memory, " + (uint)retValue);
             }
 
             BytesWritten = (UInt32)funcargs[4];
             return BytesWritten;
         }
 
-        public static IntPtr LdrGetProcedureAddress(IntPtr hModule, IntPtr FunctionName, IntPtr Ordinal, ref IntPtr FunctionAddress)
+        internal static IntPtr LdrGetProcedureAddress(IntPtr hModule, IntPtr FunctionName, IntPtr Ordinal, ref IntPtr FunctionAddress)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1257,14 +1257,14 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"LdrGetProcedureAddress", typeof(DELEGATES.LdrGetProcedureAddress), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed get procedure address, " + retValue);
+                throw new InvalidOperationException("Failed get procedure address, " + (uint)retValue);
             }
 
             FunctionAddress = (IntPtr)funcargs[3];
             return FunctionAddress;
         }
 
-        public static void RtlGetVersion(ref Data.Native.OSVERSIONINFOEX VersionInformation)
+        internal static void RtlGetVersion(ref Data.Native.OSVERSIONINFOEX VersionInformation)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1275,13 +1275,13 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"RtlGetVersion", typeof(DELEGATES.RtlGetVersion), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed get procedure address, " + retValue);
+                throw new InvalidOperationException("Failed get procedure address, " + (uint)retValue);
             }
 
             VersionInformation = (Data.Native.OSVERSIONINFOEX)funcargs[0];
         }
 
-        public static UInt32 NtReadVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, ref UInt32 NumberOfBytesToRead)
+        internal static UInt32 NtReadVirtualMemory(IntPtr ProcessHandle, IntPtr BaseAddress, IntPtr Buffer, ref UInt32 NumberOfBytesToRead)
         {
             // Craft an array for the arguments
             UInt32 NumberOfBytesRead = 0;
@@ -1293,14 +1293,14 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtReadVirtualMemory", typeof(DELEGATES.NtReadVirtualMemory), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed to read memory, " + retValue);
+                throw new InvalidOperationException("Failed to read memory, " + (uint)retValue);
             }
 
             NumberOfBytesRead = (UInt32)funcargs[4];
             return NumberOfBytesRead;
         }
 
-        public static IntPtr NtOpenFile(ref IntPtr FileHandle, Data.Win32.Kernel32.FileAccessFlags DesiredAccess, ref Data.Native.OBJECT_ATTRIBUTES ObjAttr, ref Data.Native.IO_STATUS_BLOCK IoStatusBlock, Data.Win32.Kernel32.FileShareFlags ShareAccess, Data.Win32.Kernel32.FileOpenFlags OpenOptions)
+        internal static IntPtr NtOpenFile(ref IntPtr FileHandle, Data.Win32.Kernel32.FileAccessFlags DesiredAccess, ref Data.Native.OBJECT_ATTRIBUTES ObjAttr, ref Data.Native.IO_STATUS_BLOCK IoStatusBlock, Data.Win32.Kernel32.FileShareFlags ShareAccess, Data.Win32.Kernel32.FileOpenFlags OpenOptions)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1311,7 +1311,7 @@ namespace XYZ.DI
             Data.Native.NTSTATUS retValue = (Data.Native.NTSTATUS)Generic.DynamicAPIInvoke(@"ntdll.dll", @"NtOpenFile", typeof(DELEGATES.NtOpenFile), ref funcargs);
             if (retValue != Data.Native.NTSTATUS.Success)
             {
-                throw new InvalidOperationException("Failed to open file, " + retValue);
+                throw new InvalidOperationException("Failed to open file, " + (uint)retValue);
             }
 
 
@@ -1321,7 +1321,7 @@ namespace XYZ.DI
 
         /// <summary>
         /// Holds delegates for API calls in the NT Layer.
-        /// Must be public so that they may be used with SharpSploit.Execution.DynamicInvoke.Generic.DynamicFunctionInvoke
+        /// Must be internal so that they may be used with SharpSploit.Execution.DynamicInvoke.Generic.DynamicFunctionInvoke
         /// </summary>
         /// <example>
         /// 
@@ -1339,10 +1339,10 @@ namespace XYZ.DI
         ///     procHandle, startAddress, IntPtr.Zero, Data.Native.NT_CREATION_FLAGS.HIDE_FROM_DEBUGGER, 0, 0, 0, IntPtr.Zero);
         /// 
         /// </example>
-        public struct DELEGATES
+        internal struct DELEGATES
         {
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate Data.Native.NTSTATUS NtCreateThreadEx(
+            internal delegate Data.Native.NTSTATUS NtCreateThreadEx(
                 out IntPtr threadHandle,
                 Data.Win32.WinNT.ACCESS_MASK desiredAccess,
                 IntPtr objectAttributes,
@@ -1356,7 +1356,7 @@ namespace XYZ.DI
                 IntPtr attributeList);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate Data.Native.NTSTATUS RtlCreateUserThread(
+            internal delegate Data.Native.NTSTATUS RtlCreateUserThread(
                 IntPtr Process,
                 IntPtr ThreadSecurityDescriptor,
                 bool CreateSuspended,
@@ -1369,7 +1369,7 @@ namespace XYZ.DI
                 IntPtr ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate Data.Native.NTSTATUS NtCreateSection(
+            internal delegate Data.Native.NTSTATUS NtCreateSection(
                 ref IntPtr SectionHandle,
                 uint DesiredAccess,
                 IntPtr ObjectAttributes,
@@ -1379,12 +1379,12 @@ namespace XYZ.DI
                 IntPtr FileHandle);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate Data.Native.NTSTATUS NtUnmapViewOfSection(
+            internal delegate Data.Native.NTSTATUS NtUnmapViewOfSection(
                 IntPtr hProc,
                 IntPtr baseAddr);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate Data.Native.NTSTATUS NtMapViewOfSection(
+            internal delegate Data.Native.NTSTATUS NtMapViewOfSection(
                 IntPtr SectionHandle,
                 IntPtr ProcessHandle,
                 out IntPtr BaseAddress,
@@ -1397,25 +1397,25 @@ namespace XYZ.DI
                 uint Win32Protect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 LdrLoadDll(
+            internal delegate UInt32 LdrLoadDll(
                 IntPtr PathToFile,
                 UInt32 dwFlags,
                 ref Data.Native.UNICODE_STRING ModuleFileName,
                 ref IntPtr ModuleHandle);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate void RtlInitUnicodeString(
+            internal delegate void RtlInitUnicodeString(
                 ref Data.Native.UNICODE_STRING DestinationString,
                 [MarshalAs(UnmanagedType.LPWStr)]
                 string SourceString);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate void RtlZeroMemory(
+            internal delegate void RtlZeroMemory(
                 IntPtr Destination,
                 int length);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueryInformationProcess(
+            internal delegate UInt32 NtQueryInformationProcess(
                 IntPtr processHandle,
                 Data.Native.PROCESSINFOCLASS processInformationClass,
                 IntPtr processInformation,
@@ -1423,14 +1423,14 @@ namespace XYZ.DI
                 ref UInt32 returnLength);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenProcess(
+            internal delegate UInt32 NtOpenProcess(
                 ref IntPtr ProcessHandle,
                 Data.Win32.Kernel32.ProcessAccessFlags DesiredAccess,
                 ref Data.Native.OBJECT_ATTRIBUTES ObjectAttributes,
                 ref Data.Native.CLIENT_ID ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueueApcThread(
+            internal delegate UInt32 NtQueueApcThread(
                 IntPtr ThreadHandle,
                 IntPtr ApcRoutine,
                 IntPtr ApcArgument1,
@@ -1438,14 +1438,14 @@ namespace XYZ.DI
                 IntPtr ApcArgument3);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenThread(
+            internal delegate UInt32 NtOpenThread(
                 ref IntPtr ThreadHandle,
                 Data.Win32.Kernel32.ThreadAccess DesiredAccess,
                 ref Data.Native.OBJECT_ATTRIBUTES ObjectAttributes,
                 ref Data.Native.CLIENT_ID ClientId);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtAllocateVirtualMemory(
+            internal delegate UInt32 NtAllocateVirtualMemory(
                 IntPtr ProcessHandle,
                 ref IntPtr BaseAddress,
                 IntPtr ZeroBits,
@@ -1454,14 +1454,14 @@ namespace XYZ.DI
                 UInt32 Protect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtFreeVirtualMemory(
+            internal delegate UInt32 NtFreeVirtualMemory(
                 IntPtr ProcessHandle,
                 ref IntPtr BaseAddress,
                 ref IntPtr RegionSize,
                 UInt32 FreeType);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtQueryVirtualMemory(
+            internal delegate UInt32 NtQueryVirtualMemory(
                 IntPtr ProcessHandle,
                 IntPtr BaseAddress,
                 Data.Native.MEMORYINFOCLASS MemoryInformationClass,
@@ -1470,7 +1470,7 @@ namespace XYZ.DI
                 ref UInt32 ReturnLength);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtProtectVirtualMemory(
+            internal delegate UInt32 NtProtectVirtualMemory(
                 IntPtr ProcessHandle,
                 ref IntPtr BaseAddress,
                 ref IntPtr RegionSize,
@@ -1478,7 +1478,7 @@ namespace XYZ.DI
                 ref UInt32 OldProtect);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtWriteVirtualMemory(
+            internal delegate UInt32 NtWriteVirtualMemory(
                 IntPtr ProcessHandle,
                 IntPtr BaseAddress,
                 IntPtr Buffer,
@@ -1486,24 +1486,24 @@ namespace XYZ.DI
                 ref UInt32 BytesWritten);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 RtlUnicodeStringToAnsiString(
+            internal delegate UInt32 RtlUnicodeStringToAnsiString(
                 ref Data.Native.ANSI_STRING DestinationString,
                 ref Data.Native.UNICODE_STRING SourceString,
                 bool AllocateDestinationString);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 LdrGetProcedureAddress(
+            internal delegate UInt32 LdrGetProcedureAddress(
                 IntPtr hModule,
                 IntPtr FunctionName,
                 IntPtr Ordinal,
                 ref IntPtr FunctionAddress);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 RtlGetVersion(
+            internal delegate UInt32 RtlGetVersion(
                 ref Data.Native.OSVERSIONINFOEX VersionInformation);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtReadVirtualMemory(
+            internal delegate UInt32 NtReadVirtualMemory(
                 IntPtr ProcessHandle,
                 IntPtr BaseAddress,
                 IntPtr Buffer,
@@ -1511,7 +1511,7 @@ namespace XYZ.DI
                 ref UInt32 NumberOfBytesRead);
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate UInt32 NtOpenFile(
+            internal delegate UInt32 NtOpenFile(
                 ref IntPtr FileHandle,
                 Data.Win32.Kernel32.FileAccessFlags DesiredAccess,
                 ref Data.Native.OBJECT_ATTRIBUTES ObjAttr,
@@ -1521,7 +1521,7 @@ namespace XYZ.DI
         }
     }
 
-    public static class Win32
+    internal static class Win32
     {
         /// <summary>
         /// Uses DynamicInvocation to call the OpenProcess Win32 API. https://docs.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-openprocess
@@ -1531,7 +1531,7 @@ namespace XYZ.DI
         /// <param name="bInheritHandle"></param>
         /// <param name="dwProcessId"></param>
         /// <returns></returns>
-        public static IntPtr OpenProcess(Data.Win32.Kernel32.ProcessAccessFlags dwDesiredAccess, bool bInheritHandle, UInt32 dwProcessId)
+        internal static IntPtr OpenProcess(Data.Win32.Kernel32.ProcessAccessFlags dwDesiredAccess, bool bInheritHandle, UInt32 dwProcessId)
         {
             // Craft an array for the arguments
             object[] funcargs =
@@ -1543,7 +1543,7 @@ namespace XYZ.DI
                 typeof(Delegates.OpenProcess), ref funcargs);
         }
 
-        public static IntPtr CreateRemoteThread(
+        internal static IntPtr CreateRemoteThread(
             IntPtr hProcess,
             IntPtr lpThreadAttributes,
             uint dwStackSize,
@@ -1571,7 +1571,7 @@ namespace XYZ.DI
         /// Uses DynamicInvocation to call the IsWow64Process Win32 API. https://docs.microsoft.com/en-us/windows/win32/api/wow64apiset/nf-wow64apiset-iswow64process
         /// </summary>
         /// <returns>Returns true if process is WOW64, and false if not (64-bit, or 32-bit on a 32-bit machine).</returns>
-        public static bool IsWow64Process(IntPtr hProcess, ref bool lpSystemInfo)
+        internal static bool IsWow64Process(IntPtr hProcess, ref bool lpSystemInfo)
         {
 
             // Build the set of parameters to pass in to IsWow64Process
@@ -1588,10 +1588,10 @@ namespace XYZ.DI
             return retVal;
         }
 
-        public static class Delegates
+        internal static class Delegates
         {
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate IntPtr CreateRemoteThread(IntPtr hProcess,
+            internal delegate IntPtr CreateRemoteThread(IntPtr hProcess,
                 IntPtr lpThreadAttributes,
                 uint dwStackSize,
                 IntPtr lpStartAddress,
@@ -1600,14 +1600,14 @@ namespace XYZ.DI
                 out IntPtr lpThreadId);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-            public delegate IntPtr OpenProcess(
+            internal delegate IntPtr OpenProcess(
                 Data.Win32.Kernel32.ProcessAccessFlags dwDesiredAccess,
                 bool bInheritHandle,
                 UInt32 dwProcessId
             );
 
             [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-            public delegate bool IsWow64Process(
+            internal delegate bool IsWow64Process(
                 IntPtr hProcess, ref bool lpSystemInfo
             );
         }
@@ -1622,89 +1622,89 @@ namespace XYZ.Data
     /// <remarks>
     /// A majority of this library is adapted from signatures found at www.pinvoke.net.
     /// </remarks>
-    public static class Native
+    internal static class Native
     {
         [StructLayout(LayoutKind.Sequential)]
-        public struct UNICODE_STRING
+        internal struct UNICODE_STRING
         {
-            public UInt16 Length;
-            public UInt16 MaximumLength;
-            public IntPtr Buffer;
+            internal UInt16 Length;
+            internal UInt16 MaximumLength;
+            internal IntPtr Buffer;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct ANSI_STRING
+        internal struct ANSI_STRING
         {
-            public UInt16 Length;
-            public UInt16 MaximumLength;
-            public IntPtr Buffer;
+            internal UInt16 Length;
+            internal UInt16 MaximumLength;
+            internal IntPtr Buffer;
         }
 
-        public struct PROCESS_BASIC_INFORMATION
+        internal struct PROCESS_BASIC_INFORMATION
         {
-            public IntPtr ExitStatus;
-            public IntPtr PebBaseAddress;
-            public IntPtr AffinityMask;
-            public IntPtr BasePriority;
-            public UIntPtr UniqueProcessId;
-            public int InheritedFromUniqueProcessId;
+            internal IntPtr ExitStatus;
+            internal IntPtr PebBaseAddress;
+            internal IntPtr AffinityMask;
+            internal IntPtr BasePriority;
+            internal UIntPtr UniqueProcessId;
+            internal int InheritedFromUniqueProcessId;
 
-            public int Size
+            internal int Size
             {
                 get { return (int)Marshal.SizeOf(typeof(PROCESS_BASIC_INFORMATION)); }
             }
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 0)]
-        public struct OBJECT_ATTRIBUTES
+        internal struct OBJECT_ATTRIBUTES
         {
-            public Int32 Length;
-            public IntPtr RootDirectory;
-            public IntPtr ObjectName; // -> UNICODE_STRING
-            public uint Attributes;
-            public IntPtr SecurityDescriptor;
-            public IntPtr SecurityQualityOfService;
+            internal Int32 Length;
+            internal IntPtr RootDirectory;
+            internal IntPtr ObjectName; // -> UNICODE_STRING
+            internal uint Attributes;
+            internal IntPtr SecurityDescriptor;
+            internal IntPtr SecurityQualityOfService;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IO_STATUS_BLOCK
+        internal struct IO_STATUS_BLOCK
         {
-            public IntPtr Status;
-            public IntPtr Information;
+            internal IntPtr Status;
+            internal IntPtr Information;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct CLIENT_ID
+        internal struct CLIENT_ID
         {
-            public IntPtr UniqueProcess;
-            public IntPtr UniqueThread;
+            internal IntPtr UniqueProcess;
+            internal IntPtr UniqueThread;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct OSVERSIONINFOEX
+        internal struct OSVERSIONINFOEX
         {
-            public uint OSVersionInfoSize;
-            public uint MajorVersion;
-            public uint MinorVersion;
-            public uint BuildNumber;
-            public uint PlatformId;
+            internal uint OSVersionInfoSize;
+            internal uint MajorVersion;
+            internal uint MinorVersion;
+            internal uint BuildNumber;
+            internal uint PlatformId;
             [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)]
-            public string CSDVersion;
-            public ushort ServicePackMajor;
-            public ushort ServicePackMinor;
-            public ushort SuiteMask;
-            public byte ProductType;
-            public byte Reserved;
+            internal string CSDVersion;
+            internal ushort ServicePackMajor;
+            internal ushort ServicePackMinor;
+            internal ushort SuiteMask;
+            internal byte ProductType;
+            internal byte Reserved;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct LIST_ENTRY
+        internal struct LIST_ENTRY
         {
-            public IntPtr Flink;
-            public IntPtr Blink;
+            internal IntPtr Flink;
+            internal IntPtr Blink;
         }
 
-        public enum MEMORYINFOCLASS : int
+        internal enum MEMORYINFOCLASS : int
         {
             MemoryBasicInformation = 0,
             MemoryWorkingSetList,
@@ -1712,7 +1712,7 @@ namespace XYZ.Data
             MemoryBasicVlmInformation
         }
 
-        public enum PROCESSINFOCLASS : int
+        internal enum PROCESSINFOCLASS : int
         {
             ProcessBasicInformation = 0, // 0, q: PROCESS_BASIC_INFORMATION, PROCESS_EXTENDED_BASIC_INFORMATION
             ProcessQuotaLimits, // qs: QUOTA_LIMITS, QUOTA_LIMITS_EX
@@ -1777,7 +1777,7 @@ namespace XYZ.Data
         /// <summary>
         /// NT_CREATION_FLAGS is an undocumented enum. https://processhacker.sourceforge.io/doc/ntpsapi_8h_source.html
         /// </summary>
-        public enum NT_CREATION_FLAGS : ulong
+        internal enum NT_CREATION_FLAGS : ulong
         {
             CREATE_SUSPENDED = 0x00000001,
             SKIP_THREAD_ATTACH = 0x00000002,
@@ -1791,7 +1791,7 @@ namespace XYZ.Data
         /// NTSTATUS is an undocument enum. https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-erref/596a1078-e883-4972-9bbc-49e60bebca55
         /// https://www.pinvoke.net/default.aspx/Enums/NtStatus.html
         /// </summary>
-        public enum NTSTATUS : uint
+        internal enum NTSTATUS : uint
         {
             // Success
             Success = 0x00000000,
@@ -2138,20 +2138,20 @@ namespace XYZ.Data
         }
     }
 
-    public static class PE
+    internal static class PE
     {
         // DllMain constants
-        public const UInt32 DLL_PROCESS_DETACH = 0;
-        public const UInt32 DLL_PROCESS_ATTACH = 1;
-        public const UInt32 DLL_THREAD_ATTACH = 2;
-        public const UInt32 DLL_THREAD_DETACH = 3;
+        internal const UInt32 DLL_PROCESS_DETACH = 0;
+        internal const UInt32 DLL_PROCESS_ATTACH = 1;
+        internal const UInt32 DLL_THREAD_ATTACH = 2;
+        internal const UInt32 DLL_THREAD_DETACH = 3;
 
         // Primary class for loading PE
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate bool DllMain(IntPtr hinstDLL, uint fdwReason, IntPtr lpvReserved);
+        internal delegate bool DllMain(IntPtr hinstDLL, uint fdwReason, IntPtr lpvReserved);
 
         [Flags]
-        public enum DataSectionFlags : uint
+        internal enum DataSectionFlags : uint
         {
             TYPE_NO_PAD = 0x00000008,
             CNT_CODE = 0x00000020,
@@ -2193,370 +2193,370 @@ namespace XYZ.Data
         }
 
 
-        public struct IMAGE_DOS_HEADER
+        internal struct IMAGE_DOS_HEADER
         {      // DOS .EXE header
-            public UInt16 e_magic;              // Magic number
-            public UInt16 e_cblp;               // Bytes on last page of file
-            public UInt16 e_cp;                 // Pages in file
-            public UInt16 e_crlc;               // Relocations
-            public UInt16 e_cparhdr;            // Size of header in paragraphs
-            public UInt16 e_minalloc;           // Minimum extra paragraphs needed
-            public UInt16 e_maxalloc;           // Maximum extra paragraphs needed
-            public UInt16 e_ss;                 // Initial (relative) SS value
-            public UInt16 e_sp;                 // Initial SP value
-            public UInt16 e_csum;               // Checksum
-            public UInt16 e_ip;                 // Initial IP value
-            public UInt16 e_cs;                 // Initial (relative) CS value
-            public UInt16 e_lfarlc;             // File address of relocation table
-            public UInt16 e_ovno;               // Overlay number
-            public UInt16 e_res_0;              // Reserved words
-            public UInt16 e_res_1;              // Reserved words
-            public UInt16 e_res_2;              // Reserved words
-            public UInt16 e_res_3;              // Reserved words
-            public UInt16 e_oemid;              // OEM identifier (for e_oeminfo)
-            public UInt16 e_oeminfo;            // OEM information; e_oemid specific
-            public UInt16 e_res2_0;             // Reserved words
-            public UInt16 e_res2_1;             // Reserved words
-            public UInt16 e_res2_2;             // Reserved words
-            public UInt16 e_res2_3;             // Reserved words
-            public UInt16 e_res2_4;             // Reserved words
-            public UInt16 e_res2_5;             // Reserved words
-            public UInt16 e_res2_6;             // Reserved words
-            public UInt16 e_res2_7;             // Reserved words
-            public UInt16 e_res2_8;             // Reserved words
-            public UInt16 e_res2_9;             // Reserved words
-            public UInt32 e_lfanew;             // File address of new exe header
+            internal UInt16 e_magic;              // Magic number
+            internal UInt16 e_cblp;               // Bytes on last page of file
+            internal UInt16 e_cp;                 // Pages in file
+            internal UInt16 e_crlc;               // Relocations
+            internal UInt16 e_cparhdr;            // Size of header in paragraphs
+            internal UInt16 e_minalloc;           // Minimum extra paragraphs needed
+            internal UInt16 e_maxalloc;           // Maximum extra paragraphs needed
+            internal UInt16 e_ss;                 // Initial (relative) SS value
+            internal UInt16 e_sp;                 // Initial SP value
+            internal UInt16 e_csum;               // Checksum
+            internal UInt16 e_ip;                 // Initial IP value
+            internal UInt16 e_cs;                 // Initial (relative) CS value
+            internal UInt16 e_lfarlc;             // File address of relocation table
+            internal UInt16 e_ovno;               // Overlay number
+            internal UInt16 e_res_0;              // Reserved words
+            internal UInt16 e_res_1;              // Reserved words
+            internal UInt16 e_res_2;              // Reserved words
+            internal UInt16 e_res_3;              // Reserved words
+            internal UInt16 e_oemid;              // OEM identifier (for e_oeminfo)
+            internal UInt16 e_oeminfo;            // OEM information; e_oemid specific
+            internal UInt16 e_res2_0;             // Reserved words
+            internal UInt16 e_res2_1;             // Reserved words
+            internal UInt16 e_res2_2;             // Reserved words
+            internal UInt16 e_res2_3;             // Reserved words
+            internal UInt16 e_res2_4;             // Reserved words
+            internal UInt16 e_res2_5;             // Reserved words
+            internal UInt16 e_res2_6;             // Reserved words
+            internal UInt16 e_res2_7;             // Reserved words
+            internal UInt16 e_res2_8;             // Reserved words
+            internal UInt16 e_res2_9;             // Reserved words
+            internal UInt32 e_lfanew;             // File address of new exe header
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_DATA_DIRECTORY
+        internal struct IMAGE_DATA_DIRECTORY
         {
-            public UInt32 VirtualAddress;
-            public UInt32 Size;
+            internal UInt32 VirtualAddress;
+            internal UInt32 Size;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct IMAGE_OPTIONAL_HEADER32
+        internal struct IMAGE_OPTIONAL_HEADER32
         {
-            public UInt16 Magic;
-            public Byte MajorLinkerVersion;
-            public Byte MinorLinkerVersion;
-            public UInt32 SizeOfCode;
-            public UInt32 SizeOfInitializedData;
-            public UInt32 SizeOfUninitializedData;
-            public UInt32 AddressOfEntryPoint;
-            public UInt32 BaseOfCode;
-            public UInt32 BaseOfData;
-            public UInt32 ImageBase;
-            public UInt32 SectionAlignment;
-            public UInt32 FileAlignment;
-            public UInt16 MajorOperatingSystemVersion;
-            public UInt16 MinorOperatingSystemVersion;
-            public UInt16 MajorImageVersion;
-            public UInt16 MinorImageVersion;
-            public UInt16 MajorSubsystemVersion;
-            public UInt16 MinorSubsystemVersion;
-            public UInt32 Win32VersionValue;
-            public UInt32 SizeOfImage;
-            public UInt32 SizeOfHeaders;
-            public UInt32 CheckSum;
-            public UInt16 Subsystem;
-            public UInt16 DllCharacteristics;
-            public UInt32 SizeOfStackReserve;
-            public UInt32 SizeOfStackCommit;
-            public UInt32 SizeOfHeapReserve;
-            public UInt32 SizeOfHeapCommit;
-            public UInt32 LoaderFlags;
-            public UInt32 NumberOfRvaAndSizes;
+            internal UInt16 Magic;
+            internal Byte MajorLinkerVersion;
+            internal Byte MinorLinkerVersion;
+            internal UInt32 SizeOfCode;
+            internal UInt32 SizeOfInitializedData;
+            internal UInt32 SizeOfUninitializedData;
+            internal UInt32 AddressOfEntryPoint;
+            internal UInt32 BaseOfCode;
+            internal UInt32 BaseOfData;
+            internal UInt32 ImageBase;
+            internal UInt32 SectionAlignment;
+            internal UInt32 FileAlignment;
+            internal UInt16 MajorOperatingSystemVersion;
+            internal UInt16 MinorOperatingSystemVersion;
+            internal UInt16 MajorImageVersion;
+            internal UInt16 MinorImageVersion;
+            internal UInt16 MajorSubsystemVersion;
+            internal UInt16 MinorSubsystemVersion;
+            internal UInt32 Win32VersionValue;
+            internal UInt32 SizeOfImage;
+            internal UInt32 SizeOfHeaders;
+            internal UInt32 CheckSum;
+            internal UInt16 Subsystem;
+            internal UInt16 DllCharacteristics;
+            internal UInt32 SizeOfStackReserve;
+            internal UInt32 SizeOfStackCommit;
+            internal UInt32 SizeOfHeapReserve;
+            internal UInt32 SizeOfHeapCommit;
+            internal UInt32 LoaderFlags;
+            internal UInt32 NumberOfRvaAndSizes;
 
-            public IMAGE_DATA_DIRECTORY ExportTable;
-            public IMAGE_DATA_DIRECTORY ImportTable;
-            public IMAGE_DATA_DIRECTORY ResourceTable;
-            public IMAGE_DATA_DIRECTORY ExceptionTable;
-            public IMAGE_DATA_DIRECTORY CertificateTable;
-            public IMAGE_DATA_DIRECTORY BaseRelocationTable;
-            public IMAGE_DATA_DIRECTORY Debug;
-            public IMAGE_DATA_DIRECTORY Architecture;
-            public IMAGE_DATA_DIRECTORY GlobalPtr;
-            public IMAGE_DATA_DIRECTORY TLSTable;
-            public IMAGE_DATA_DIRECTORY LoadConfigTable;
-            public IMAGE_DATA_DIRECTORY BoundImport;
-            public IMAGE_DATA_DIRECTORY IAT;
-            public IMAGE_DATA_DIRECTORY DelayImportDescriptor;
-            public IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
-            public IMAGE_DATA_DIRECTORY Reserved;
+            internal IMAGE_DATA_DIRECTORY ExportTable;
+            internal IMAGE_DATA_DIRECTORY ImportTable;
+            internal IMAGE_DATA_DIRECTORY ResourceTable;
+            internal IMAGE_DATA_DIRECTORY ExceptionTable;
+            internal IMAGE_DATA_DIRECTORY CertificateTable;
+            internal IMAGE_DATA_DIRECTORY BaseRelocationTable;
+            internal IMAGE_DATA_DIRECTORY Debug;
+            internal IMAGE_DATA_DIRECTORY Architecture;
+            internal IMAGE_DATA_DIRECTORY GlobalPtr;
+            internal IMAGE_DATA_DIRECTORY TLSTable;
+            internal IMAGE_DATA_DIRECTORY LoadConfigTable;
+            internal IMAGE_DATA_DIRECTORY BoundImport;
+            internal IMAGE_DATA_DIRECTORY IAT;
+            internal IMAGE_DATA_DIRECTORY DelayImportDescriptor;
+            internal IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
+            internal IMAGE_DATA_DIRECTORY Reserved;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct IMAGE_OPTIONAL_HEADER64
+        internal struct IMAGE_OPTIONAL_HEADER64
         {
-            public UInt16 Magic;
-            public Byte MajorLinkerVersion;
-            public Byte MinorLinkerVersion;
-            public UInt32 SizeOfCode;
-            public UInt32 SizeOfInitializedData;
-            public UInt32 SizeOfUninitializedData;
-            public UInt32 AddressOfEntryPoint;
-            public UInt32 BaseOfCode;
-            public UInt64 ImageBase;
-            public UInt32 SectionAlignment;
-            public UInt32 FileAlignment;
-            public UInt16 MajorOperatingSystemVersion;
-            public UInt16 MinorOperatingSystemVersion;
-            public UInt16 MajorImageVersion;
-            public UInt16 MinorImageVersion;
-            public UInt16 MajorSubsystemVersion;
-            public UInt16 MinorSubsystemVersion;
-            public UInt32 Win32VersionValue;
-            public UInt32 SizeOfImage;
-            public UInt32 SizeOfHeaders;
-            public UInt32 CheckSum;
-            public UInt16 Subsystem;
-            public UInt16 DllCharacteristics;
-            public UInt64 SizeOfStackReserve;
-            public UInt64 SizeOfStackCommit;
-            public UInt64 SizeOfHeapReserve;
-            public UInt64 SizeOfHeapCommit;
-            public UInt32 LoaderFlags;
-            public UInt32 NumberOfRvaAndSizes;
+            internal UInt16 Magic;
+            internal Byte MajorLinkerVersion;
+            internal Byte MinorLinkerVersion;
+            internal UInt32 SizeOfCode;
+            internal UInt32 SizeOfInitializedData;
+            internal UInt32 SizeOfUninitializedData;
+            internal UInt32 AddressOfEntryPoint;
+            internal UInt32 BaseOfCode;
+            internal UInt64 ImageBase;
+            internal UInt32 SectionAlignment;
+            internal UInt32 FileAlignment;
+            internal UInt16 MajorOperatingSystemVersion;
+            internal UInt16 MinorOperatingSystemVersion;
+            internal UInt16 MajorImageVersion;
+            internal UInt16 MinorImageVersion;
+            internal UInt16 MajorSubsystemVersion;
+            internal UInt16 MinorSubsystemVersion;
+            internal UInt32 Win32VersionValue;
+            internal UInt32 SizeOfImage;
+            internal UInt32 SizeOfHeaders;
+            internal UInt32 CheckSum;
+            internal UInt16 Subsystem;
+            internal UInt16 DllCharacteristics;
+            internal UInt64 SizeOfStackReserve;
+            internal UInt64 SizeOfStackCommit;
+            internal UInt64 SizeOfHeapReserve;
+            internal UInt64 SizeOfHeapCommit;
+            internal UInt32 LoaderFlags;
+            internal UInt32 NumberOfRvaAndSizes;
 
-            public IMAGE_DATA_DIRECTORY ExportTable;
-            public IMAGE_DATA_DIRECTORY ImportTable;
-            public IMAGE_DATA_DIRECTORY ResourceTable;
-            public IMAGE_DATA_DIRECTORY ExceptionTable;
-            public IMAGE_DATA_DIRECTORY CertificateTable;
-            public IMAGE_DATA_DIRECTORY BaseRelocationTable;
-            public IMAGE_DATA_DIRECTORY Debug;
-            public IMAGE_DATA_DIRECTORY Architecture;
-            public IMAGE_DATA_DIRECTORY GlobalPtr;
-            public IMAGE_DATA_DIRECTORY TLSTable;
-            public IMAGE_DATA_DIRECTORY LoadConfigTable;
-            public IMAGE_DATA_DIRECTORY BoundImport;
-            public IMAGE_DATA_DIRECTORY IAT;
-            public IMAGE_DATA_DIRECTORY DelayImportDescriptor;
-            public IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
-            public IMAGE_DATA_DIRECTORY Reserved;
+            internal IMAGE_DATA_DIRECTORY ExportTable;
+            internal IMAGE_DATA_DIRECTORY ImportTable;
+            internal IMAGE_DATA_DIRECTORY ResourceTable;
+            internal IMAGE_DATA_DIRECTORY ExceptionTable;
+            internal IMAGE_DATA_DIRECTORY CertificateTable;
+            internal IMAGE_DATA_DIRECTORY BaseRelocationTable;
+            internal IMAGE_DATA_DIRECTORY Debug;
+            internal IMAGE_DATA_DIRECTORY Architecture;
+            internal IMAGE_DATA_DIRECTORY GlobalPtr;
+            internal IMAGE_DATA_DIRECTORY TLSTable;
+            internal IMAGE_DATA_DIRECTORY LoadConfigTable;
+            internal IMAGE_DATA_DIRECTORY BoundImport;
+            internal IMAGE_DATA_DIRECTORY IAT;
+            internal IMAGE_DATA_DIRECTORY DelayImportDescriptor;
+            internal IMAGE_DATA_DIRECTORY CLRRuntimeHeader;
+            internal IMAGE_DATA_DIRECTORY Reserved;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        public struct IMAGE_FILE_HEADER
+        internal struct IMAGE_FILE_HEADER
         {
-            public UInt16 Machine;
-            public UInt16 NumberOfSections;
-            public UInt32 TimeDateStamp;
-            public UInt32 PointerToSymbolTable;
-            public UInt32 NumberOfSymbols;
-            public UInt16 SizeOfOptionalHeader;
-            public UInt16 Characteristics;
+            internal UInt16 Machine;
+            internal UInt16 NumberOfSections;
+            internal UInt32 TimeDateStamp;
+            internal UInt32 PointerToSymbolTable;
+            internal UInt32 NumberOfSymbols;
+            internal UInt16 SizeOfOptionalHeader;
+            internal UInt16 Characteristics;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_SECTION_HEADER
+        internal struct IMAGE_SECTION_HEADER
         {
             [FieldOffset(0)]
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
-            public char[] Name;
+            internal char[] Name;
             [FieldOffset(8)]
-            public UInt32 VirtualSize;
+            internal UInt32 VirtualSize;
             [FieldOffset(12)]
-            public UInt32 VirtualAddress;
+            internal UInt32 VirtualAddress;
             [FieldOffset(16)]
-            public UInt32 SizeOfRawData;
+            internal UInt32 SizeOfRawData;
             [FieldOffset(20)]
-            public UInt32 PointerToRawData;
+            internal UInt32 PointerToRawData;
             [FieldOffset(24)]
-            public UInt32 PointerToRelocations;
+            internal UInt32 PointerToRelocations;
             [FieldOffset(28)]
-            public UInt32 PointerToLinenumbers;
+            internal UInt32 PointerToLinenumbers;
             [FieldOffset(32)]
-            public UInt16 NumberOfRelocations;
+            internal UInt16 NumberOfRelocations;
             [FieldOffset(34)]
-            public UInt16 NumberOfLinenumbers;
+            internal UInt16 NumberOfLinenumbers;
             [FieldOffset(36)]
-            public DataSectionFlags Characteristics;
+            internal DataSectionFlags Characteristics;
 
-            public string Section
+            internal string Section
             {
                 get { return new string(Name); }
             }
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_EXPORT_DIRECTORY
+        internal struct IMAGE_EXPORT_DIRECTORY
         {
             [FieldOffset(0)]
-            public UInt32 Characteristics;
+            internal UInt32 Characteristics;
             [FieldOffset(4)]
-            public UInt32 TimeDateStamp;
+            internal UInt32 TimeDateStamp;
             [FieldOffset(8)]
-            public UInt16 MajorVersion;
+            internal UInt16 MajorVersion;
             [FieldOffset(10)]
-            public UInt16 MinorVersion;
+            internal UInt16 MinorVersion;
             [FieldOffset(12)]
-            public UInt32 Name;
+            internal UInt32 Name;
             [FieldOffset(16)]
-            public UInt32 Base;
+            internal UInt32 Base;
             [FieldOffset(20)]
-            public UInt32 NumberOfFunctions;
+            internal UInt32 NumberOfFunctions;
             [FieldOffset(24)]
-            public UInt32 NumberOfNames;
+            internal UInt32 NumberOfNames;
             [FieldOffset(28)]
-            public UInt32 AddressOfFunctions;
+            internal UInt32 AddressOfFunctions;
             [FieldOffset(32)]
-            public UInt32 AddressOfNames;
+            internal UInt32 AddressOfNames;
             [FieldOffset(36)]
-            public UInt32 AddressOfOrdinals;
+            internal UInt32 AddressOfOrdinals;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct IMAGE_BASE_RELOCATION
+        internal struct IMAGE_BASE_RELOCATION
         {
-            public uint VirtualAdress;
-            public uint SizeOfBlock;
+            internal uint VirtualAdress;
+            internal uint SizeOfBlock;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PE_META_DATA
+        internal struct PE_META_DATA
         {
-            public UInt32 Pe;
-            public Boolean Is32Bit;
-            public IMAGE_FILE_HEADER ImageFileHeader;
-            public IMAGE_OPTIONAL_HEADER32 OptHeader32;
-            public IMAGE_OPTIONAL_HEADER64 OptHeader64;
-            public IMAGE_SECTION_HEADER[] Sections;
+            internal UInt32 Pe;
+            internal Boolean Is32Bit;
+            internal IMAGE_FILE_HEADER ImageFileHeader;
+            internal IMAGE_OPTIONAL_HEADER32 OptHeader32;
+            internal IMAGE_OPTIONAL_HEADER64 OptHeader64;
+            internal IMAGE_SECTION_HEADER[] Sections;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct PE_MANUAL_MAP
+        internal struct PE_MANUAL_MAP
         {
-            public String DecoyModule;
-            public IntPtr ModuleBase;
-            public PE_META_DATA PEINFO;
+            internal String DecoyModule;
+            internal IntPtr ModuleBase;
+            internal PE_META_DATA PEINFO;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_THUNK_DATA32
+        internal struct IMAGE_THUNK_DATA32
         {
             [FieldOffset(0)]
-            public UInt32 ForwarderString;
+            internal UInt32 ForwarderString;
             [FieldOffset(0)]
-            public UInt32 Function;
+            internal UInt32 Function;
             [FieldOffset(0)]
-            public UInt32 Ordinal;
+            internal UInt32 Ordinal;
             [FieldOffset(0)]
-            public UInt32 AddressOfData;
+            internal UInt32 AddressOfData;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct IMAGE_THUNK_DATA64
+        internal struct IMAGE_THUNK_DATA64
         {
             [FieldOffset(0)]
-            public UInt64 ForwarderString;
+            internal UInt64 ForwarderString;
             [FieldOffset(0)]
-            public UInt64 Function;
+            internal UInt64 Function;
             [FieldOffset(0)]
-            public UInt64 Ordinal;
+            internal UInt64 Ordinal;
             [FieldOffset(0)]
-            public UInt64 AddressOfData;
+            internal UInt64 AddressOfData;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct ApiSetNamespace
+        internal struct ApiSetNamespace
         {
             [FieldOffset(0x0C)]
-            public int Count;
+            internal int Count;
 
             [FieldOffset(0x10)]
-            public int EntryOffset;
+            internal int EntryOffset;
         }
 
         [StructLayout(LayoutKind.Explicit, Size = 24)]
-        public struct ApiSetNamespaceEntry
+        internal struct ApiSetNamespaceEntry
         {
             [FieldOffset(0x04)]
-            public int NameOffset;
+            internal int NameOffset;
 
             [FieldOffset(0x08)]
-            public int NameLength;
+            internal int NameLength;
 
             [FieldOffset(0x10)]
-            public int ValueOffset;
+            internal int ValueOffset;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        public struct ApiSetValueEntry
+        internal struct ApiSetValueEntry
         {
             [FieldOffset(0x0C)]
-            public int ValueOffset;
+            internal int ValueOffset;
 
             [FieldOffset(0x10)]
-            public int ValueCount;
+            internal int ValueCount;
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct LDR_DATA_TABLE_ENTRY
+        internal struct LDR_DATA_TABLE_ENTRY
         {
-            public Data.Native.LIST_ENTRY InLoadOrderLinks;
-            public Data.Native.LIST_ENTRY InMemoryOrderLinks;
-            public Data.Native.LIST_ENTRY InInitializationOrderLinks;
-            public IntPtr DllBase;
-            public IntPtr EntryPoint;
-            public UInt32 SizeOfImage;
-            public Data.Native.UNICODE_STRING FullDllName;
-            public Data.Native.UNICODE_STRING BaseDllName;
+            internal Data.Native.LIST_ENTRY InLoadOrderLinks;
+            internal Data.Native.LIST_ENTRY InMemoryOrderLinks;
+            internal Data.Native.LIST_ENTRY InInitializationOrderLinks;
+            internal IntPtr DllBase;
+            internal IntPtr EntryPoint;
+            internal UInt32 SizeOfImage;
+            internal Data.Native.UNICODE_STRING FullDllName;
+            internal Data.Native.UNICODE_STRING BaseDllName;
         }
     }//end class
 
-    public static class Win32
+    internal static class Win32
     {
-        public static class Kernel32
+        internal static class Kernel32
         {
-            public static uint MEM_COMMIT = 0x1000;
-            public static uint MEM_RESERVE = 0x2000;
-            public static uint MEM_RESET = 0x80000;
-            public static uint MEM_RESET_UNDO = 0x1000000;
-            public static uint MEM_LARGE_PAGES = 0x20000000;
-            public static uint MEM_PHYSICAL = 0x400000;
-            public static uint MEM_TOP_DOWN = 0x100000;
-            public static uint MEM_WRITE_WATCH = 0x200000;
-            public static uint MEM_COALESCE_PLACEHOLDERS = 0x1;
-            public static uint MEM_PRESERVE_PLACEHOLDER = 0x2;
-            public static uint MEM_DECOMMIT = 0x4000;
-            public static uint MEM_RELEASE = 0x8000;
+            internal static uint MEM_COMMIT = 0x1000;
+            internal static uint MEM_RESERVE = 0x2000;
+            internal static uint MEM_RESET = 0x80000;
+            internal static uint MEM_RESET_UNDO = 0x1000000;
+            internal static uint MEM_LARGE_PAGES = 0x20000000;
+            internal static uint MEM_PHYSICAL = 0x400000;
+            internal static uint MEM_TOP_DOWN = 0x100000;
+            internal static uint MEM_WRITE_WATCH = 0x200000;
+            internal static uint MEM_COALESCE_PLACEHOLDERS = 0x1;
+            internal static uint MEM_PRESERVE_PLACEHOLDER = 0x2;
+            internal static uint MEM_DECOMMIT = 0x4000;
+            internal static uint MEM_RELEASE = 0x8000;
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct IMAGE_BASE_RELOCATION
+            internal struct IMAGE_BASE_RELOCATION
             {
-                public uint VirtualAdress;
-                public uint SizeOfBlock;
+                internal uint VirtualAdress;
+                internal uint SizeOfBlock;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct IMAGE_IMPORT_DESCRIPTOR
+            internal struct IMAGE_IMPORT_DESCRIPTOR
             {
-                public uint OriginalFirstThunk;
-                public uint TimeDateStamp;
-                public uint ForwarderChain;
-                public uint Name;
-                public uint FirstThunk;
+                internal uint OriginalFirstThunk;
+                internal uint TimeDateStamp;
+                internal uint ForwarderChain;
+                internal uint Name;
+                internal uint FirstThunk;
             }
 
-            public struct SYSTEM_INFO
+            internal struct SYSTEM_INFO
             {
-                public ushort wProcessorArchitecture;
-                public ushort wReserved;
-                public uint dwPageSize;
-                public IntPtr lpMinimumApplicationAddress;
-                public IntPtr lpMaximumApplicationAddress;
-                public UIntPtr dwActiveProcessorMask;
-                public uint dwNumberOfProcessors;
-                public uint dwProcessorType;
-                public uint dwAllocationGranularity;
-                public ushort wProcessorLevel;
-                public ushort wProcessorRevision;
+                internal ushort wProcessorArchitecture;
+                internal ushort wReserved;
+                internal uint dwPageSize;
+                internal IntPtr lpMinimumApplicationAddress;
+                internal IntPtr lpMaximumApplicationAddress;
+                internal UIntPtr dwActiveProcessorMask;
+                internal uint dwNumberOfProcessors;
+                internal uint dwProcessorType;
+                internal uint dwAllocationGranularity;
+                internal ushort wProcessorLevel;
+                internal ushort wProcessorRevision;
             };
 
-            public enum Platform
+            internal enum Platform
             {
                 x86,
                 x64,
@@ -2565,7 +2565,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum ProcessAccessFlags : uint
+            internal enum ProcessAccessFlags : uint
             {
                 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms684880%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
                 PROCESS_ALL_ACCESS = 0x001F0FFF,
@@ -2585,7 +2585,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum FileAccessFlags : uint
+            internal enum FileAccessFlags : uint
             {
                 DELETE = 0x10000,
                 FILE_READ_DATA = 0x1,
@@ -2603,7 +2603,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum FileShareFlags : uint
+            internal enum FileShareFlags : uint
             {
                 FILE_SHARE_NONE = 0x0,
                 FILE_SHARE_READ = 0x1,
@@ -2612,7 +2612,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum FileOpenFlags : uint
+            internal enum FileOpenFlags : uint
             {
                 FILE_DIRECTORY_FILE = 0x1,
                 FILE_WRITE_THROUGH = 0x2,
@@ -2633,7 +2633,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum StandardRights : uint
+            internal enum StandardRights : uint
             {
                 Delete = 0x00010000,
                 ReadControl = 0x00020000,
@@ -2656,7 +2656,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum ThreadAccess : uint
+            internal enum ThreadAccess : uint
             {
                 Terminate = 0x0001,
                 SuspendResume = 0x0002,
@@ -2674,56 +2674,56 @@ namespace XYZ.Data
             }
         }
 
-        public static class User32
+        internal static class User32
         {
-            public static int WH_KEYBOARD_LL = 13;
-            public static int WM_KEYDOWN = 0x0100;
+            internal static int WH_KEYBOARD_LL = 13;
+            internal static int WM_KEYDOWN = 0x0100;
 
-            public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+            internal delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
         }
 
-        public static class Netapi32
+        internal static class Netapi32
         {
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct LOCALGROUP_USERS_INFO_0
+            internal struct LOCALGROUP_USERS_INFO_0
             {
                 [MarshalAs(UnmanagedType.LPWStr)] internal string name;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct LOCALGROUP_USERS_INFO_1
+            internal struct LOCALGROUP_USERS_INFO_1
             {
-                [MarshalAs(UnmanagedType.LPWStr)] public string name;
-                [MarshalAs(UnmanagedType.LPWStr)] public string comment;
+                [MarshalAs(UnmanagedType.LPWStr)] internal string name;
+                [MarshalAs(UnmanagedType.LPWStr)] internal string comment;
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct LOCALGROUP_MEMBERS_INFO_2
+            internal struct LOCALGROUP_MEMBERS_INFO_2
             {
-                public IntPtr lgrmi2_sid;
-                public int lgrmi2_sidusage;
-                [MarshalAs(UnmanagedType.LPWStr)] public string lgrmi2_domainandname;
+                internal IntPtr lgrmi2_sid;
+                internal int lgrmi2_sidusage;
+                [MarshalAs(UnmanagedType.LPWStr)] internal string lgrmi2_domainandname;
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct WKSTA_USER_INFO_1
+            internal struct WKSTA_USER_INFO_1
             {
-                public string wkui1_username;
-                public string wkui1_logon_domain;
-                public string wkui1_oth_domains;
-                public string wkui1_logon_server;
+                internal string wkui1_username;
+                internal string wkui1_logon_domain;
+                internal string wkui1_oth_domains;
+                internal string wkui1_logon_server;
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct SESSION_INFO_10
+            internal struct SESSION_INFO_10
             {
-                public string sesi10_cname;
-                public string sesi10_username;
-                public int sesi10_time;
-                public int sesi10_idle_time;
+                internal string sesi10_cname;
+                internal string sesi10_username;
+                internal int sesi10_time;
+                internal int sesi10_idle_time;
             }
 
-            public enum SID_NAME_USE : ushort
+            internal enum SID_NAME_USE : ushort
             {
                 SidTypeUser = 1,
                 SidTypeGroup = 2,
@@ -2737,13 +2737,13 @@ namespace XYZ.Data
             }
 
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct SHARE_INFO_1
+            internal struct SHARE_INFO_1
             {
-                public string shi1_netname;
-                public uint shi1_type;
-                public string shi1_remark;
+                internal string shi1_netname;
+                internal uint shi1_type;
+                internal string shi1_remark;
 
-                public SHARE_INFO_1(string netname, uint type, string remark)
+                internal SHARE_INFO_1(string netname, uint type, string remark)
                 {
                     this.shi1_netname = netname;
                     this.shi1_type = type;
@@ -2752,31 +2752,31 @@ namespace XYZ.Data
             }
         }
 
-        public static class Advapi32
+        internal static class Advapi32
         {
 
             // http://www.pinvoke.net/default.aspx/advapi32.openprocesstoken
-            public const UInt32 STANDARD_RIGHTS_REQUIRED = 0x000F0000;
-            public const UInt32 STANDARD_RIGHTS_READ = 0x00020000;
-            public const UInt32 TOKEN_ASSIGN_PRIMARY = 0x0001;
-            public const UInt32 TOKEN_DUPLICATE = 0x0002;
-            public const UInt32 TOKEN_IMPERSONATE = 0x0004;
-            public const UInt32 TOKEN_QUERY = 0x0008;
-            public const UInt32 TOKEN_QUERY_SOURCE = 0x0010;
-            public const UInt32 TOKEN_ADJUST_PRIVILEGES = 0x0020;
-            public const UInt32 TOKEN_ADJUST_GROUPS = 0x0040;
-            public const UInt32 TOKEN_ADJUST_DEFAULT = 0x0080;
-            public const UInt32 TOKEN_ADJUST_SESSIONID = 0x0100;
-            public const UInt32 TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
-            public const UInt32 TOKEN_ALL_ACCESS = (STANDARD_RIGHTS_REQUIRED | TOKEN_ASSIGN_PRIMARY |
+            internal const UInt32 STANDARD_RIGHTS_REQUIRED = 0x000F0000;
+            internal const UInt32 STANDARD_RIGHTS_READ = 0x00020000;
+            internal const UInt32 TOKEN_ASSIGN_PRIMARY = 0x0001;
+            internal const UInt32 TOKEN_DUPLICATE = 0x0002;
+            internal const UInt32 TOKEN_IMPERSONATE = 0x0004;
+            internal const UInt32 TOKEN_QUERY = 0x0008;
+            internal const UInt32 TOKEN_QUERY_SOURCE = 0x0010;
+            internal const UInt32 TOKEN_ADJUST_PRIVILEGES = 0x0020;
+            internal const UInt32 TOKEN_ADJUST_GROUPS = 0x0040;
+            internal const UInt32 TOKEN_ADJUST_DEFAULT = 0x0080;
+            internal const UInt32 TOKEN_ADJUST_SESSIONID = 0x0100;
+            internal const UInt32 TOKEN_READ = (STANDARD_RIGHTS_READ | TOKEN_QUERY);
+            internal const UInt32 TOKEN_ALL_ACCESS = (STANDARD_RIGHTS_REQUIRED | TOKEN_ASSIGN_PRIMARY |
                 TOKEN_DUPLICATE | TOKEN_IMPERSONATE | TOKEN_QUERY | TOKEN_QUERY_SOURCE |
                 TOKEN_ADJUST_PRIVILEGES | TOKEN_ADJUST_GROUPS | TOKEN_ADJUST_DEFAULT |
                 TOKEN_ADJUST_SESSIONID);
-            public const UInt32 TOKEN_ALT = (TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE | TOKEN_QUERY);
+            internal const UInt32 TOKEN_ALT = (TOKEN_ASSIGN_PRIMARY | TOKEN_DUPLICATE | TOKEN_IMPERSONATE | TOKEN_QUERY);
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/ms682434(v=vs.85).aspx
             [Flags]
-            public enum CREATION_FLAGS : uint
+            internal enum CREATION_FLAGS : uint
             {
                 NONE = 0x00000000,
                 DEBUG_PROCESS = 0x00000001,
@@ -2812,14 +2812,14 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum LOGON_FLAGS
+            internal enum LOGON_FLAGS
             {
                 NONE = 0x00000000,
                 LOGON_WITH_PROFILE = 0x00000001,
                 LOGON_NETCREDENTIALS_ONLY = 0x00000002
             }
 
-            public enum LOGON_TYPE
+            internal enum LOGON_TYPE
             {
                 LOGON32_LOGON_INTERACTIVE = 2,
                 LOGON32_LOGON_NETWORK,
@@ -2830,7 +2830,7 @@ namespace XYZ.Data
                 LOGON32_LOGON_NEW_CREDENTIALS
             }
 
-            public enum LOGON_PROVIDER
+            internal enum LOGON_PROVIDER
             {
                 LOGON32_PROVIDER_DEFAULT,
                 LOGON32_PROVIDER_WINNT35,
@@ -2839,7 +2839,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum SCM_ACCESS : uint
+            internal enum SCM_ACCESS : uint
             {
                 SC_MANAGER_CONNECT = 0x00001,
                 SC_MANAGER_CREATE_SERVICE = 0x00002,
@@ -2871,7 +2871,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum ACCESS_MASK : uint
+            internal enum ACCESS_MASK : uint
             {
                 DELETE = 0x00010000,
                 READ_CONTROL = 0x00020000,
@@ -2912,7 +2912,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum SERVICE_ACCESS : uint
+            internal enum SERVICE_ACCESS : uint
             {
                 SERVICE_QUERY_CONFIG = 0x00001,
                 SERVICE_CHANGE_CONFIG = 0x00002,
@@ -2958,7 +2958,7 @@ namespace XYZ.Data
             }
 
             [Flags]
-            public enum SERVICE_TYPE : uint
+            internal enum SERVICE_TYPE : uint
             {
                 SERVICE_KERNEL_DRIVER = 0x00000001,
                 SERVICE_FILE_SYSTEM_DRIVER = 0x00000002,
@@ -2967,7 +2967,7 @@ namespace XYZ.Data
                 SERVICE_INTERACTIVE_PROCESS = 0x00000100,
             }
 
-            public enum SERVICE_START : uint
+            internal enum SERVICE_START : uint
             {
                 SERVICE_BOOT_START = 0x00000000,
                 SERVICE_SYSTEM_START = 0x00000001,
@@ -2976,7 +2976,7 @@ namespace XYZ.Data
                 SERVICE_DISABLED = 0x00000004,
             }
 
-            public enum SERVICE_ERROR
+            internal enum SERVICE_ERROR
             {
                 SERVICE_ERROR_IGNORE = 0x00000000,
                 SERVICE_ERROR_NORMAL = 0x00000001,
@@ -2985,9 +2985,9 @@ namespace XYZ.Data
             }
         }
 
-        public static class Dbghelp
+        internal static class Dbghelp
         {
-            public enum MINIDUMP_TYPE
+            internal enum MINIDUMP_TYPE
             {
                 MiniDumpNormal = 0x00000000,
                 MiniDumpWithDataSegs = 0x00000001,
@@ -3015,26 +3015,26 @@ namespace XYZ.Data
             }
         }
 
-        public class WinBase
+        internal class WinBase
         {
             [StructLayout(LayoutKind.Sequential)]
-            public struct _SYSTEM_INFO
+            internal struct _SYSTEM_INFO
             {
-                public UInt16 wProcessorArchitecture;
-                public UInt16 wReserved;
-                public UInt32 dwPageSize;
-                public IntPtr lpMinimumApplicationAddress;
-                public IntPtr lpMaximumApplicationAddress;
-                public IntPtr dwActiveProcessorMask;
-                public UInt32 dwNumberOfProcessors;
-                public UInt32 dwProcessorType;
-                public UInt32 dwAllocationGranularity;
-                public UInt16 wProcessorLevel;
-                public UInt16 wProcessorRevision;
+                internal UInt16 wProcessorArchitecture;
+                internal UInt16 wReserved;
+                internal UInt32 dwPageSize;
+                internal IntPtr lpMinimumApplicationAddress;
+                internal IntPtr lpMaximumApplicationAddress;
+                internal IntPtr dwActiveProcessorMask;
+                internal UInt32 dwNumberOfProcessors;
+                internal UInt32 dwProcessorType;
+                internal UInt32 dwAllocationGranularity;
+                internal UInt16 wProcessorLevel;
+                internal UInt16 wProcessorRevision;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _SECURITY_ATTRIBUTES
+            internal struct _SECURITY_ATTRIBUTES
             {
                 UInt32 nLength;
                 IntPtr lpSecurityDescriptor;
@@ -3042,47 +3042,47 @@ namespace XYZ.Data
             };
         }
 
-        public class WinNT
+        internal class WinNT
         {
-            public const UInt32 PAGE_NOACCESS = 0x01;
-            public const UInt32 PAGE_READONLY = 0x02;
-            public const UInt32 PAGE_READWRITE = 0x04;
-            public const UInt32 PAGE_WRITECOPY = 0x08;
-            public const UInt32 PAGE_EXECUTE = 0x10;
-            public const UInt32 PAGE_EXECUTE_READ = 0x20;
-            public const UInt32 PAGE_EXECUTE_READWRITE = 0x40;
-            public const UInt32 PAGE_EXECUTE_WRITECOPY = 0x80;
-            public const UInt32 PAGE_GUARD = 0x100;
-            public const UInt32 PAGE_NOCACHE = 0x200;
-            public const UInt32 PAGE_WRITECOMBINE = 0x400;
-            public const UInt32 PAGE_TARGETS_INVALID = 0x40000000;
-            public const UInt32 PAGE_TARGETS_NO_UPDATE = 0x40000000;
+            internal const UInt32 PAGE_NOACCESS = 0x01;
+            internal const UInt32 PAGE_READONLY = 0x02;
+            internal const UInt32 PAGE_READWRITE = 0x04;
+            internal const UInt32 PAGE_WRITECOPY = 0x08;
+            internal const UInt32 PAGE_EXECUTE = 0x10;
+            internal const UInt32 PAGE_EXECUTE_READ = 0x20;
+            internal const UInt32 PAGE_EXECUTE_READWRITE = 0x40;
+            internal const UInt32 PAGE_EXECUTE_WRITECOPY = 0x80;
+            internal const UInt32 PAGE_GUARD = 0x100;
+            internal const UInt32 PAGE_NOCACHE = 0x200;
+            internal const UInt32 PAGE_WRITECOMBINE = 0x400;
+            internal const UInt32 PAGE_TARGETS_INVALID = 0x40000000;
+            internal const UInt32 PAGE_TARGETS_NO_UPDATE = 0x40000000;
 
-            public const UInt32 SEC_COMMIT = 0x08000000;
-            public const UInt32 SEC_IMAGE = 0x1000000;
-            public const UInt32 SEC_IMAGE_NO_EXECUTE = 0x11000000;
-            public const UInt32 SEC_LARGE_PAGES = 0x80000000;
-            public const UInt32 SEC_NOCACHE = 0x10000000;
-            public const UInt32 SEC_RESERVE = 0x4000000;
-            public const UInt32 SEC_WRITECOMBINE = 0x40000000;
+            internal const UInt32 SEC_COMMIT = 0x08000000;
+            internal const UInt32 SEC_IMAGE = 0x1000000;
+            internal const UInt32 SEC_IMAGE_NO_EXECUTE = 0x11000000;
+            internal const UInt32 SEC_LARGE_PAGES = 0x80000000;
+            internal const UInt32 SEC_NOCACHE = 0x10000000;
+            internal const UInt32 SEC_RESERVE = 0x4000000;
+            internal const UInt32 SEC_WRITECOMBINE = 0x40000000;
 
-            public const UInt32 SE_PRIVILEGE_ENABLED = 0x2;
-            public const UInt32 SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x1;
-            public const UInt32 SE_PRIVILEGE_REMOVED = 0x4;
-            public const UInt32 SE_PRIVILEGE_USED_FOR_ACCESS = 0x3;
+            internal const UInt32 SE_PRIVILEGE_ENABLED = 0x2;
+            internal const UInt32 SE_PRIVILEGE_ENABLED_BY_DEFAULT = 0x1;
+            internal const UInt32 SE_PRIVILEGE_REMOVED = 0x4;
+            internal const UInt32 SE_PRIVILEGE_USED_FOR_ACCESS = 0x3;
 
-            public const UInt64 SE_GROUP_ENABLED = 0x00000004L;
-            public const UInt64 SE_GROUP_ENABLED_BY_DEFAULT = 0x00000002L;
-            public const UInt64 SE_GROUP_INTEGRITY = 0x00000020L;
-            public const UInt32 SE_GROUP_INTEGRITY_32 = 0x00000020;
-            public const UInt64 SE_GROUP_INTEGRITY_ENABLED = 0x00000040L;
-            public const UInt64 SE_GROUP_LOGON_ID = 0xC0000000L;
-            public const UInt64 SE_GROUP_MANDATORY = 0x00000001L;
-            public const UInt64 SE_GROUP_OWNER = 0x00000008L;
-            public const UInt64 SE_GROUP_RESOURCE = 0x20000000L;
-            public const UInt64 SE_GROUP_USE_FOR_DENY_ONLY = 0x00000010L;
+            internal const UInt64 SE_GROUP_ENABLED = 0x00000004L;
+            internal const UInt64 SE_GROUP_ENABLED_BY_DEFAULT = 0x00000002L;
+            internal const UInt64 SE_GROUP_INTEGRITY = 0x00000020L;
+            internal const UInt32 SE_GROUP_INTEGRITY_32 = 0x00000020;
+            internal const UInt64 SE_GROUP_INTEGRITY_ENABLED = 0x00000040L;
+            internal const UInt64 SE_GROUP_LOGON_ID = 0xC0000000L;
+            internal const UInt64 SE_GROUP_MANDATORY = 0x00000001L;
+            internal const UInt64 SE_GROUP_OWNER = 0x00000008L;
+            internal const UInt64 SE_GROUP_RESOURCE = 0x20000000L;
+            internal const UInt64 SE_GROUP_USE_FOR_DENY_ONLY = 0x00000010L;
 
-            public enum _SECURITY_IMPERSONATION_LEVEL
+            internal enum _SECURITY_IMPERSONATION_LEVEL
             {
                 SecurityAnonymous,
                 SecurityIdentification,
@@ -3090,13 +3090,13 @@ namespace XYZ.Data
                 SecurityDelegation
             }
 
-            public enum TOKEN_TYPE
+            internal enum TOKEN_TYPE
             {
                 TokenPrimary = 1,
                 TokenImpersonation
             }
 
-            public enum _TOKEN_ELEVATION_TYPE
+            internal enum _TOKEN_ELEVATION_TYPE
             {
                 TokenElevationTypeDefault = 1,
                 TokenElevationTypeFull,
@@ -3104,112 +3104,112 @@ namespace XYZ.Data
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _MEMORY_BASIC_INFORMATION32
+            internal struct _MEMORY_BASIC_INFORMATION32
             {
-                public UInt32 BaseAddress;
-                public UInt32 AllocationBase;
-                public UInt32 AllocationProtect;
-                public UInt32 RegionSize;
-                public UInt32 State;
-                public UInt32 Protect;
-                public UInt32 Type;
+                internal UInt32 BaseAddress;
+                internal UInt32 AllocationBase;
+                internal UInt32 AllocationProtect;
+                internal UInt32 RegionSize;
+                internal UInt32 State;
+                internal UInt32 Protect;
+                internal UInt32 Type;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _MEMORY_BASIC_INFORMATION64
+            internal struct _MEMORY_BASIC_INFORMATION64
             {
-                public UInt64 BaseAddress;
-                public UInt64 AllocationBase;
-                public UInt32 AllocationProtect;
-                public UInt32 __alignment1;
-                public UInt64 RegionSize;
-                public UInt32 State;
-                public UInt32 Protect;
-                public UInt32 Type;
-                public UInt32 __alignment2;
+                internal UInt64 BaseAddress;
+                internal UInt64 AllocationBase;
+                internal UInt32 AllocationProtect;
+                internal UInt32 __alignment1;
+                internal UInt64 RegionSize;
+                internal UInt32 State;
+                internal UInt32 Protect;
+                internal UInt32 Type;
+                internal UInt32 __alignment2;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _LUID_AND_ATTRIBUTES
+            internal struct _LUID_AND_ATTRIBUTES
             {
-                public _LUID Luid;
-                public UInt32 Attributes;
+                internal _LUID Luid;
+                internal UInt32 Attributes;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _LUID
+            internal struct _LUID
             {
-                public UInt32 LowPart;
-                public UInt32 HighPart;
+                internal UInt32 LowPart;
+                internal UInt32 HighPart;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _TOKEN_STATISTICS
+            internal struct _TOKEN_STATISTICS
             {
-                public _LUID TokenId;
-                public _LUID AuthenticationId;
-                public UInt64 ExpirationTime;
-                public TOKEN_TYPE TokenType;
-                public _SECURITY_IMPERSONATION_LEVEL ImpersonationLevel;
-                public UInt32 DynamicCharged;
-                public UInt32 DynamicAvailable;
-                public UInt32 GroupCount;
-                public UInt32 PrivilegeCount;
-                public _LUID ModifiedId;
+                internal _LUID TokenId;
+                internal _LUID AuthenticationId;
+                internal UInt64 ExpirationTime;
+                internal TOKEN_TYPE TokenType;
+                internal _SECURITY_IMPERSONATION_LEVEL ImpersonationLevel;
+                internal UInt32 DynamicCharged;
+                internal UInt32 DynamicAvailable;
+                internal UInt32 GroupCount;
+                internal UInt32 PrivilegeCount;
+                internal _LUID ModifiedId;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _TOKEN_PRIVILEGES
+            internal struct _TOKEN_PRIVILEGES
             {
-                public UInt32 PrivilegeCount;
-                public _LUID_AND_ATTRIBUTES Privileges;
+                internal UInt32 PrivilegeCount;
+                internal _LUID_AND_ATTRIBUTES Privileges;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _TOKEN_MANDATORY_LABEL
+            internal struct _TOKEN_MANDATORY_LABEL
             {
-                public _SID_AND_ATTRIBUTES Label;
+                internal _SID_AND_ATTRIBUTES Label;
             }
 
-            public struct _SID
+            internal struct _SID
             {
-                public byte Revision;
-                public byte SubAuthorityCount;
-                public WinNT._SID_IDENTIFIER_AUTHORITY IdentifierAuthority;
+                internal byte Revision;
+                internal byte SubAuthorityCount;
+                internal WinNT._SID_IDENTIFIER_AUTHORITY IdentifierAuthority;
                 [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
-                public ulong[] SubAuthority;
+                internal ulong[] SubAuthority;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _SID_IDENTIFIER_AUTHORITY
+            internal struct _SID_IDENTIFIER_AUTHORITY
             {
                 [MarshalAs(UnmanagedType.ByValArray, SizeConst = 6, ArraySubType = UnmanagedType.I1)]
-                public byte[] Value;
+                internal byte[] Value;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _SID_AND_ATTRIBUTES
+            internal struct _SID_AND_ATTRIBUTES
             {
-                public IntPtr Sid;
-                public UInt32 Attributes;
+                internal IntPtr Sid;
+                internal UInt32 Attributes;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _PRIVILEGE_SET
+            internal struct _PRIVILEGE_SET
             {
-                public UInt32 PrivilegeCount;
-                public UInt32 Control;
+                internal UInt32 PrivilegeCount;
+                internal UInt32 Control;
                 [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]
-                public _LUID_AND_ATTRIBUTES[] Privilege;
+                internal _LUID_AND_ATTRIBUTES[] Privilege;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _TOKEN_USER
+            internal struct _TOKEN_USER
             {
-                public _SID_AND_ATTRIBUTES User;
+                internal _SID_AND_ATTRIBUTES User;
             }
 
-            public enum _SID_NAME_USE
+            internal enum _SID_NAME_USE
             {
                 SidTypeUser = 1,
                 SidTypeGroup,
@@ -3223,7 +3223,7 @@ namespace XYZ.Data
                 SidTypeLabel
             }
 
-            public enum _TOKEN_INFORMATION_CLASS
+            internal enum _TOKEN_INFORMATION_CLASS
             {
                 TokenUser = 1,
                 TokenGroups,
@@ -3270,7 +3270,7 @@ namespace XYZ.Data
 
             // http://www.pinvoke.net/default.aspx/Enums.ACCESS_MASK
             [Flags]
-            public enum ACCESS_MASK : uint
+            internal enum ACCESS_MASK : uint
             {
                 DELETE = 0x00010000,
                 READ_CONTROL = 0x00020000,
@@ -3318,7 +3318,7 @@ namespace XYZ.Data
             };
         }
 
-        public class ProcessThreadsAPI
+        internal class ProcessThreadsAPI
         {
             [Flags]
             internal enum STARTF : uint
@@ -3336,31 +3336,31 @@ namespace XYZ.Data
 
             // https://msdn.microsoft.com/en-us/library/windows/desktop/ms686331(v=vs.85).aspx
             [StructLayout(LayoutKind.Sequential)]
-            public struct _STARTUPINFO
+            internal struct _STARTUPINFO
             {
-                public UInt32 cb;
-                public String lpReserved;
-                public String lpDesktop;
-                public String lpTitle;
-                public UInt32 dwX;
-                public UInt32 dwY;
-                public UInt32 dwXSize;
-                public UInt32 dwYSize;
-                public UInt32 dwXCountChars;
-                public UInt32 dwYCountChars;
-                public UInt32 dwFillAttribute;
-                public UInt32 dwFlags;
-                public UInt16 wShowWindow;
-                public UInt16 cbReserved2;
-                public IntPtr lpReserved2;
-                public IntPtr hStdInput;
-                public IntPtr hStdOutput;
-                public IntPtr hStdError;
+                internal UInt32 cb;
+                internal String lpReserved;
+                internal String lpDesktop;
+                internal String lpTitle;
+                internal UInt32 dwX;
+                internal UInt32 dwY;
+                internal UInt32 dwXSize;
+                internal UInt32 dwYSize;
+                internal UInt32 dwXCountChars;
+                internal UInt32 dwYCountChars;
+                internal UInt32 dwFillAttribute;
+                internal UInt32 dwFlags;
+                internal UInt16 wShowWindow;
+                internal UInt16 cbReserved2;
+                internal IntPtr lpReserved2;
+                internal IntPtr hStdInput;
+                internal IntPtr hStdOutput;
+                internal IntPtr hStdError;
             };
 
             //https://msdn.microsoft.com/en-us/library/windows/desktop/ms686331(v=vs.85).aspx
             [StructLayout(LayoutKind.Sequential)]
-            public struct _STARTUPINFOEX
+            internal struct _STARTUPINFOEX
             {
                 _STARTUPINFO StartupInfo;
                 // PPROC_THREAD_ATTRIBUTE_LIST lpAttributeList;
@@ -3368,50 +3368,50 @@ namespace XYZ.Data
 
             //https://msdn.microsoft.com/en-us/library/windows/desktop/ms684873(v=vs.85).aspx
             [StructLayout(LayoutKind.Sequential)]
-            public struct _PROCESS_INFORMATION
+            internal struct _PROCESS_INFORMATION
             {
-                public IntPtr hProcess;
-                public IntPtr hThread;
-                public UInt32 dwProcessId;
-                public UInt32 dwThreadId;
+                internal IntPtr hProcess;
+                internal IntPtr hThread;
+                internal UInt32 dwProcessId;
+                internal UInt32 dwThreadId;
             };
         }
 
-        public class WinCred
+        internal class WinCred
         {
 #pragma warning disable 0618
             [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-            public struct _CREDENTIAL
+            internal struct _CREDENTIAL
             {
-                public CRED_FLAGS Flags;
-                public UInt32 Type;
-                public IntPtr TargetName;
-                public IntPtr Comment;
-                public FILETIME LastWritten;
-                public UInt32 CredentialBlobSize;
-                public UInt32 Persist;
-                public UInt32 AttributeCount;
-                public IntPtr Attributes;
-                public IntPtr TargetAlias;
-                public IntPtr UserName;
+                internal CRED_FLAGS Flags;
+                internal UInt32 Type;
+                internal IntPtr TargetName;
+                internal IntPtr Comment;
+                internal FILETIME LastWritten;
+                internal UInt32 CredentialBlobSize;
+                internal UInt32 Persist;
+                internal UInt32 AttributeCount;
+                internal IntPtr Attributes;
+                internal IntPtr TargetAlias;
+                internal IntPtr UserName;
             }
 #pragma warning restore 0618
 
-            public enum CRED_FLAGS : uint
+            internal enum CRED_FLAGS : uint
             {
                 NONE = 0x0,
                 PROMPT_NOW = 0x2,
                 USERNAME_TARGET = 0x4
             }
 
-            public enum CRED_PERSIST : uint
+            internal enum CRED_PERSIST : uint
             {
                 Session = 1,
                 LocalMachine,
                 Enterprise
             }
 
-            public enum CRED_TYPE : uint
+            internal enum CRED_TYPE : uint
             {
                 Generic = 1,
                 DomainPassword,
@@ -3424,30 +3424,30 @@ namespace XYZ.Data
             }
         }
 
-        public class Secur32
+        internal class Secur32
         {
-            public struct _SECURITY_LOGON_SESSION_DATA
+            internal struct _SECURITY_LOGON_SESSION_DATA
             {
-                public UInt32 Size;
-                public WinNT._LUID LoginID;
-                public _LSA_UNICODE_STRING Username;
-                public _LSA_UNICODE_STRING LoginDomain;
-                public _LSA_UNICODE_STRING AuthenticationPackage;
-                public UInt32 LogonType;
-                public UInt32 Session;
-                public IntPtr pSid;
-                public UInt64 LoginTime;
-                public _LSA_UNICODE_STRING LogonServer;
-                public _LSA_UNICODE_STRING DnsDomainName;
-                public _LSA_UNICODE_STRING Upn;
+                internal UInt32 Size;
+                internal WinNT._LUID LoginID;
+                internal _LSA_UNICODE_STRING Username;
+                internal _LSA_UNICODE_STRING LoginDomain;
+                internal _LSA_UNICODE_STRING AuthenticationPackage;
+                internal UInt32 LogonType;
+                internal UInt32 Session;
+                internal IntPtr pSid;
+                internal UInt64 LoginTime;
+                internal _LSA_UNICODE_STRING LogonServer;
+                internal _LSA_UNICODE_STRING DnsDomainName;
+                internal _LSA_UNICODE_STRING Upn;
             }
 
             [StructLayout(LayoutKind.Sequential)]
-            public struct _LSA_UNICODE_STRING
+            internal struct _LSA_UNICODE_STRING
             {
-                public UInt16 Length;
-                public UInt16 MaximumLength;
-                public IntPtr Buffer;
+                internal UInt16 Length;
+                internal UInt16 MaximumLength;
+                internal IntPtr Buffer;
             }
         }
     }
