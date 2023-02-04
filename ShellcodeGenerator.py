@@ -240,7 +240,7 @@ if __name__ == "__main__":
 
     if (filename):
         # Generate shellcode
-        shellcode = ShellcodeGenerator.generate_shellcode(filename)
+        shellcode = generator.generate_shellcode(filename)
 
         print("Shellcode length:", len(shellcode))
         
